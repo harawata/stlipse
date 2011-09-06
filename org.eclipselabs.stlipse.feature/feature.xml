@@ -2,7 +2,8 @@
 <feature
       id="org.eclipselabs.stlipse.feature"
       label="Stlipse"
-      version="1.0.0.qualifier">
+      version="1.0.0.qualifier"
+      provider-name="Iwao AVE!">
 
    <description url="http://eclipselabs.org/p/stlipse/">
       Stlipse : Eclipse plug-in for Stripes framework.

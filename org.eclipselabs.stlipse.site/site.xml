@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.eclipselabs.stlipse.feature_1.0.0.201109052257.jar" id="org.eclipselabs.stlipse.feature" version="1.0.0.201109052257">
+   <feature url="features/org.eclipselabs.stlipse.feature_1.0.0.201109061017.jar" id="org.eclipselabs.stlipse.feature" version="1.0.0.201109061017">
+      <category name="org.eclipselabs.stlipse"/>
+   </feature>
+   <feature url="features/org.eclipselabs.stlipse.templates.feature_1.0.0.201109061017.jar" id="org.eclipselabs.stlipse.templates.feature" version="1.0.0.201109061017">
       <category name="org.eclipselabs.stlipse"/>
    </feature>
    <category-def name="org.eclipselabs.stlipse" label="Stlipse"/>
