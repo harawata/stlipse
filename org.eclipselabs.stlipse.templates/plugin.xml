@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.editors.templates">
+      <template
+            autoinsert="true"
+            contextTypeId="java-members"
+            description="@DefaultHandler method (Stripes)"
+            id="org.eclipselabs.stlipse.templates.defaultHandler"
+            name="ssdefault">
+         <pattern>
+            @${defaultType:newType(net.sourceforge.stripes.action.DefaultHandler)}
+public Resolution ${event_name}()
+{
+	${:import(net.sourceforge.stripes.action.DefaultHandler, net.sourceforge.stripes.action.Resolution)}${cursor}
+	return ${null};
+}
+         </pattern>
+      </template>
+      <template
+            autoinsert="true"
+            contextTypeId="java-members"
+            description="Event handler method (Stripes)"
+            id="org.eclipselabs.stlipse.templates.handler"
+            name="sshandler">
+         <pattern>
+            public Resolution ${event_name}()
+{
+	${:import(net.sourceforge.stripes.action.Resolution)}${cursor}
+	return ${null};
+}
+         </pattern>
+      </template>
+      <template
+            autoinsert="true"
+            contextTypeId="java-members"
+            description="@Before method (Stripes)"
+            id="org.eclipselabs.stlipse.templates.before"
+            name="ssbefore">
+         <pattern>
+            @${beforeType:newType(net.sourceforge.stripes.action.Before)}(stages = ${lifecycleStageType:newType(net.sourceforge.stripes.controller.LifecycleStage)}.${BindingAndValidation})
+public Resolution ${name}()
+{
+	${imp:import(net.sourceforge.stripes.action.Before, net.sourceforge.stripes.controller.LifecycleStage)}${cursor}
+	return ${null};
+}
+         </pattern>
+      </template>
+      <template
+            autoinsert="true"
+            contextTypeId="java-members"
+            description="@After method (Stripes)"
+            id="org.eclipselabs.stlipse.templates.after"
+            name="ssafter">
+         <pattern>
+            @${afterType:newType(net.sourceforge.stripes.action.After)}(stages = ${lifecycleStageType:newType(net.sourceforge.stripes.controller.LifecycleStage)}.${BindingAndValidation})
+public Resolution ${name}()
+{
+	${imp:import(net.sourceforge.stripes.action.After, net.sourceforge.stripes.controller.LifecycleStage)}${cursor}
+	return ${null};
+}
+         </pattern>
+      </template>
+      <template
+            autoinsert="true"
+            contextTypeId="java-members"
+            description="@ValidationMethod method (Stripes)"
+            id="org.eclipselabs.stlipse.templates.validationMethod"
+            name="ssvalidationmethod">
+         <pattern>
+            @${type:newType(net.sourceforge.stripes.validation.ValidationMethod)}
+public void ${customValidation}(${errsType:newType(net.sourceforge.stripes.validation.ValidationErrors)} errors) {
+	${cursor}
+}
+         </pattern>
+      </template>
+   </extension>
+
+</plugin>

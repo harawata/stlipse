@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="org.eclipselabs.stlipse.feature"
-      label="Stlipse"
+      id="org.eclipselabs.stlipse.templates.feature"
+      label="Stlipse Templates"
       version="1.0.1.qualifier"
       provider-name="Iwao AVE!">
 
    <description url="http://eclipselabs.org/p/stlipse/">
-      Stlipse : Eclipse plug-in for Stripes framework.
+      Stlipse Templates : A set of templates for Stripes developers.
    </description>
 
    <copyright>
@@ -41,7 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
    </license>
 
    <plugin
-         id="org.eclipselabs.stlipse"
+         id="org.eclipselabs.stlipse.templates"
          download-size="0"
          install-size="0"
          version="0.0.0"
