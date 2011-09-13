@@ -62,4 +62,14 @@
          </include>
       </validator>
    </extension>
+   <extension
+         point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
+      <hyperlinkDetector
+            activate="true"
+            class="org.eclipselabs.stlipse.hyperlink.BeanclassHyperlinkDetector"
+            id="org.eclipselabs.stlipse.BeanclassHyperlinkDetector"
+            name="Stlipse Beanclass Hyperlink Detector"
+            targetId="org.eclipse.jst.jsp.core.jspsource">
+      </hyperlinkDetector>
+   </extension>
 </plugin>
