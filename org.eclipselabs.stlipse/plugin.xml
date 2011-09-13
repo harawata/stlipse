@@ -13,4 +13,53 @@
          </contentType>
       </proposalComputer>
    </extension>
+   <extension
+         id="StlipseJSPSourceValidator"
+         point="org.eclipse.wst.sse.ui.sourcevalidation">
+      <validator
+            class="org.eclipselabs.stlipse.validation.JspValidator"
+            id="org.eclipselabs.stlipse.validation.JspValidator"
+            scope="partial">
+         <contentTypeIdentifier
+               id="org.eclipse.jst.jsp.core.jspsource">
+            <partitionType
+                  id="org.eclipse.jst.jsp.DEFAULT_JSP">
+            </partitionType>
+            <partitionType
+                  id="org.eclipse.jst.jsp.SCRIPT.JAVA">
+            </partitionType>
+            <partitionType
+                  id="org.eclipse.jst.jsp.JSP_DIRECTIVE">
+            </partitionType>
+         </contentTypeIdentifier>
+      </validator>
+   </extension>
+   <extension
+         id="StripesJspValidator"
+         name="Stripes JSP Validator"
+         point="org.eclipse.wst.validation.validatorV2">
+      <validator
+            build="true"
+            class="org.eclipselabs.stlipse.validation.JspValidator"
+            manual="true"
+            markerId="org.eclipse.jst.jsp.core.validationMarker"
+            sourceid="StlipseJSPSourceValidator"
+            version="1">
+         <include>
+            <rules>
+               <contentType
+                     id="org.eclipse.jst.jsp.core.jspsource">
+               </contentType>
+               <fileext
+                     caseSensitive="false"
+                     ext="jsp">
+               </fileext>
+               <fileext
+                     caseSensitive="false"
+                     ext="tag">
+               </fileext>
+            </rules>
+         </include>
+      </validator>
+   </extension>
 </plugin>
