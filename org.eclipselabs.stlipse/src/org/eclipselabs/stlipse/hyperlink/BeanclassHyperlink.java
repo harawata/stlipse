@@ -5,14 +5,11 @@
 
 package org.eclipselabs.stlipse.hyperlink;
 
-import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
-import org.eclipse.ui.PartInitException;
 import org.eclipselabs.stlipse.Activator;
 
 /**
@@ -53,17 +50,10 @@ public class BeanclassHyperlink implements IHyperlink
 		{
 			JavaUI.openInEditor(type);
 		}
-		catch (PartInitException e)
+		catch (Exception e)
 		{
-			ILog log = Activator.getDefault().getLog();
-			log.log(new Status(Status.WARNING, Activator.PLUGIN_ID, 0,
-				"Failed to open Java editor fir type: " + type.getFullyQualifiedName(), e));
-		}
-		catch (JavaModelException e)
-		{
-			ILog log = Activator.getDefault().getLog();
-			log.log(new Status(Status.WARNING, Activator.PLUGIN_ID, 0,
-				"Failed to open Java editor fir type: " + type.getFullyQualifiedName(), e));
+			Activator.log(Status.WARNING,
+				"Failed to open Java editor for type: " + type.getFullyQualifiedName(), e);
 		}
 	}
 

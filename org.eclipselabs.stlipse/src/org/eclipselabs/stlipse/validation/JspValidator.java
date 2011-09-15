@@ -12,6 +12,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
@@ -32,12 +33,15 @@ import org.eclipse.wst.xml.core.internal.provisional.document.IDOMAttr;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMElement;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
+import org.eclipselabs.stlipse.Activator;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class JspValidator extends AbstractValidator implements IValidator
 {
+
+	public static final String MISSING_ACTION_BEAN = "missingActionBean";
 
 	public void cleanup(IReporter reporter)
 	{
@@ -69,6 +73,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 			return null;
 		ValidationResult result = new ValidationResult();
 		final IReporter reporter = result.getReporter(monitor);
+		reporter.removeAllMessages(this);
 		validateFile((IFile)resource, reporter);
 		return result;
 	}
@@ -98,7 +103,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			Activator.log(Status.WARNING, "Error occurred during validation.", e);
 		}
 		finally
 		{
@@ -109,14 +114,8 @@ public class JspValidator extends AbstractValidator implements IValidator
 		}
 	}
 
-	/**
-	 * @param domElem
-	 * @param file
-	 * @param iStructuredDocument
-	 * @param reporter
-	 */
 	private void validateElement(IDOMElement element, IFile file, IStructuredDocument doc,
-		IReporter reporter)
+		IReporter reporter) throws JavaModelException
 	{
 		if (element == null)
 			return;
@@ -131,27 +130,23 @@ public class JspValidator extends AbstractValidator implements IValidator
 				// Ignore EL expression.
 				if (className.startsWith("$"))
 					continue;
-				try
-				{
-					IJavaProject project = JavaCore.create(file.getProject());
-					IType type = project.findType(className);
-					if (type == null || !type.exists())
-					{
-						LocalizedMessage message = new LocalizedMessage(IMessage.HIGH_SEVERITY,
-							"ActionBean not found.", file);
-						int start = element.getStartOffset();
-						int length = element.getStartEndOffset() - start;
-						int lineNo = doc.getLineOfOffset(start);
-						message.setLineNo(lineNo);
-						message.setOffset(start);
-						message.setLength(length);
 
-						reporter.addMessage(this, message);
-					}
-				}
-				catch (JavaModelException e)
+				IJavaProject project = JavaCore.create(file.getProject());
+				IType type = project.findType(className);
+				if (type == null || !type.exists())
 				{
-					e.printStackTrace();
+					LocalizedMessage message = new LocalizedMessage(IMessage.HIGH_SEVERITY,
+						"ActionBean not found.", file);
+					int start = attr.getValueRegionStartOffset();
+					int length = attr.getValueRegionText().length();
+					int lineNo = doc.getLineOfOffset(start);
+					message.setLineNo(lineNo);
+					message.setOffset(start);
+					message.setLength(length);
+					message.setAttribute("problemType", MISSING_ACTION_BEAN);
+					message.setAttribute("errorValue", attr.getValue());
+
+					reporter.addMessage(this, message);
 				}
 			}
 		}

@@ -42,7 +42,7 @@
             build="true"
             class="org.eclipselabs.stlipse.validation.JspValidator"
             manual="true"
-            markerId="org.eclipse.jst.jsp.core.validationMarker"
+            markerId="org.eclipselabs.stlipse.stripesJspProblem"
             sourceid="StlipseJSPSourceValidator"
             version="1">
          <include>
@@ -71,5 +71,25 @@
             name="Stlipse Beanclass Hyperlink Detector"
             targetId="org.eclipse.jst.jsp.core.jspsource">
       </hyperlinkDetector>
+   </extension>
+   <extension
+         id="org.eclipselabs.stlipse.stripesJspProblem"
+         name="Stripes JSP Problem"
+         point="org.eclipse.core.resources.markers">
+      <super
+            type="org.eclipse.core.resources.problemmarker">
+      </super>
+      <super
+            type="org.eclipse.core.resources.textmarker">
+      </super>
+      <persistent
+            value="true">
+      </persistent>
+      <attribute
+            name="problemType">
+      </attribute>
+      <attribute
+            name="errorValue">
+      </attribute>
    </extension>
 </plugin>

@@ -9,7 +9,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
@@ -97,9 +96,9 @@ public class BeanclassHyperlinkDetector extends AbstractHyperlinkDetector
 							}
 							catch (JavaModelException e)
 							{
-								ILog log = Activator.getDefault().getLog();
-								log.log(new Status(Status.ERROR, Activator.PLUGIN_ID, 0,
-									"Failed to create a hyperlink for " + value, e));
+								Activator.log(Status.WARNING,
+									"Failed to create a hyperlink for "
+									+ value, e);
 							}
 						}
 					}

@@ -5,6 +5,7 @@
 
 package org.eclipselabs.stlipse;
 
+import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -57,6 +58,26 @@ public class Activator extends AbstractUIPlugin
 	public static Activator getDefault()
 	{
 		return plugin;
+	}
+
+	public static void log(Status status)
+	{
+		getDefault().getLog().log(status);
+	}
+
+	public static void log(int severity, String message)
+	{
+		log(new Status(severity, PLUGIN_ID, message));
+	}
+
+	public static void log(int severity, String message, Throwable t)
+	{
+		log(severity, 0, message, t);
+	}
+
+	public static void log(int severity, int code, String message, Throwable t)
+	{
+		log(new Status(severity, PLUGIN_ID, code, message, t));
 	}
 
 }

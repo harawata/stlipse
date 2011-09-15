@@ -14,7 +14,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
@@ -45,6 +44,7 @@ import org.eclipse.wst.sse.core.utils.StringUtils;
 import org.eclipse.wst.sse.ui.contentassist.CompletionProposalInvocationContext;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMNode;
 import org.eclipse.wst.xml.core.internal.regions.DOMRegionContext;
+import org.eclipse.wst.xml.ui.internal.contentassist.AbstractXMLCompletionProposalComputer;
 import org.eclipse.wst.xml.ui.internal.contentassist.ContentAssistRequest;
 import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposalComputer;
 import org.eclipselabs.stlipse.Activator;
@@ -189,9 +189,7 @@ public class BeanclassCompletionProposalComputer extends DefaultXMLCompletionPro
 		}
 		catch (CoreException e)
 		{
-			ILog log = Activator.getDefault().getLog();
-			log.log(new Status(Status.ERROR, Activator.PLUGIN_ID, 0,
-				"Error occurred while creating proposals.", e));
+			Activator.log(Status.ERROR, "Error occurred while creating proposals.", e);
 		}
 		return proposalList;
 	}
@@ -287,14 +285,10 @@ public class BeanclassCompletionProposalComputer extends DefaultXMLCompletionPro
 
 		if (packageList.size() == 0)
 		{
-			ILog log = Activator.getDefault().getLog();
-			log.log(new Status(Status.INFO, Activator.PLUGIN_ID,
-				"The filter init-param 'ActionResolver.Packages' was not found in your web.xml. "
-					+ "You can safely ignore this message "
-					+ "if the project does not use Stripes framework."));
+			Activator.log(Status.WARNING,
+				"The filter init-param 'ActionResolver.Packages' was not found in your web.xml. ");
 		}
 
 		return packageList;
 	}
-
 }
