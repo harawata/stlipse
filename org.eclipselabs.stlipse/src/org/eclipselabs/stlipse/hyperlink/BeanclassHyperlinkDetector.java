@@ -5,16 +5,9 @@
 
 package org.eclipselabs.stlipse.hyperlink;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -32,6 +25,7 @@ import org.eclipse.wst.sse.core.internal.provisional.text.ITextRegionList;
 import org.eclipse.wst.sse.core.utils.StringUtils;
 import org.eclipse.wst.xml.core.internal.regions.DOMRegionContext;
 import org.eclipselabs.stlipse.Activator;
+import org.eclipselabs.stlipse.util.ProjectUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -78,7 +72,7 @@ public class BeanclassHyperlinkDetector extends AbstractHyperlinkDetector
 						{
 							try
 							{
-								IJavaProject project = getProjectFromDocument(document);
+								IJavaProject project = ProjectUtil.getProjectFromDocument(document);
 								if (project != null)
 								{
 									IType type = project.findType(value);
@@ -97,8 +91,7 @@ public class BeanclassHyperlinkDetector extends AbstractHyperlinkDetector
 							catch (JavaModelException e)
 							{
 								Activator.log(Status.WARNING,
-									"Failed to create a hyperlink for "
-									+ value, e);
+									"Failed to create a hyperlink for " + value, e);
 							}
 						}
 					}
@@ -143,45 +136,6 @@ public class BeanclassHyperlinkDetector extends AbstractHyperlinkDetector
 			return (Node)inode;
 		}
 		return null;
-	}
-
-	private IJavaProject getProjectFromDocument(IDocument document)
-	{
-		IStructuredModel model = null;
-		String baseLocation = null;
-		IJavaProject result = null;
-
-		// try to locate the file in the workspace
-		try
-		{
-			model = StructuredModelManager.getModelManager().getExistingModelForRead(document);
-			if (model != null)
-			{
-				baseLocation = model.getBaseLocation();
-			}
-		}
-		finally
-		{
-			if (model != null)
-				model.releaseFromRead();
-		}
-		if (baseLocation != null)
-		{
-			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-			IPath filePath = new Path(baseLocation);
-			IFile file = null;
-
-			if (filePath.segmentCount() > 1)
-			{
-				file = root.getFile(filePath);
-			}
-			if (file != null)
-			{
-				IProject project = file.getProject();
-				result = JavaCore.create(project);
-			}
-		}
-		return result;
 	}
 
 }

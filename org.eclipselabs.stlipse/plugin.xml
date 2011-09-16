@@ -19,7 +19,7 @@
       <validator
             class="org.eclipselabs.stlipse.validation.JspValidator"
             id="org.eclipselabs.stlipse.validation.JspValidator"
-            scope="partial">
+            scope="total">
          <contentTypeIdentifier
                id="org.eclipse.jst.jsp.core.jspsource">
             <partitionType
@@ -73,6 +73,13 @@
       </hyperlinkDetector>
    </extension>
    <extension
+         point="org.eclipse.ui.ide.markerResolution">
+      <markerResolutionGenerator
+            class="org.eclipselabs.stlipse.validation.JspMarkerResolutionGenerator"
+            markerType="org.eclipselabs.stlipse.stripesJspProblem">
+      </markerResolutionGenerator>
+   </extension>
+   <extension
          id="org.eclipselabs.stlipse.stripesJspProblem"
          name="Stripes JSP Problem"
          point="org.eclipse.core.resources.markers">
@@ -91,5 +98,44 @@
       <attribute
             name="errorValue">
       </attribute>
+   </extension>
+   <extension
+         point="org.eclipse.wst.sse.ui.editorConfiguration">
+      <provisionalConfiguration
+            class="org.eclipselabs.stlipse.validation.JspQuickAssistProcessor"
+            target="org.eclipse.jst.jsp.JSP_DIRECTIVE"
+            type="org.eclipse.jface.text.quickassist.IQuickAssistProcessor">
+      </provisionalConfiguration>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors.annotationTypes">
+      <type
+            markerSeverity="2"
+            markerType="org.eclipselabs.stlipse.stripesJspProblem"
+            name="org.eclipselabs.stlipse.stripesJspProblem">
+      </type>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors.markerAnnotationSpecification">
+      <specification
+            annotationType="org.eclipselabs.stlipse.stripesJspProblem"
+            colorPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.color"
+            colorPreferenceValue="255,192,38"
+            contributesToHeader="true"
+            highlightPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.highlight"
+            highlightPreferenceValue="false"
+            includeOnPreferencePage="true"
+            label="Stripes JSP Problem"
+            overviewRulerPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.overviewRuler"
+            overviewRulerPreferenceValue="true"
+            presentationLayer="1"
+            symbolicIcon="error"
+            textPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.text"
+            textPreferenceValue="true"
+            textStylePreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.textStyle"
+            textStylePreferenceValue="SQUIGGLES"
+            verticalRulerPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.verticalRuler"
+            verticalRulerPreferenceValue="true">
+      </specification>
    </extension>
 </plugin>

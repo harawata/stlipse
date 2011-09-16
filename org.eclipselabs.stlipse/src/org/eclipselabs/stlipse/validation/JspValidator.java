@@ -5,11 +5,11 @@
 
 package org.eclipselabs.stlipse.validation;
 
-import java.util.Locale;
-
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
@@ -23,9 +23,7 @@ import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 import org.eclipse.wst.validation.AbstractValidator;
 import org.eclipse.wst.validation.ValidationResult;
 import org.eclipse.wst.validation.ValidationState;
-import org.eclipse.wst.validation.internal.core.Message;
 import org.eclipse.wst.validation.internal.core.ValidationException;
-import org.eclipse.wst.validation.internal.provisional.core.IMessage;
 import org.eclipse.wst.validation.internal.provisional.core.IReporter;
 import org.eclipse.wst.validation.internal.provisional.core.IValidationContext;
 import org.eclipse.wst.validation.internal.provisional.core.IValidator;
@@ -41,6 +39,8 @@ import org.w3c.dom.NodeList;
 public class JspValidator extends AbstractValidator implements IValidator
 {
 
+	public static final String MARKER_ID = "org.eclipselabs.stlipse.stripesJspProblem";
+
 	public static final String MISSING_ACTION_BEAN = "missingActionBean";
 
 	public void cleanup(IReporter reporter)
@@ -52,8 +52,6 @@ public class JspValidator extends AbstractValidator implements IValidator
 		throws ValidationException
 	{
 		String[] uris = helper.getURIs();
-		reporter.removeAllMessages(this);
-
 		if (uris != null)
 		{
 			for (int i = 0; i < uris.length && !reporter.isCancelled(); i++)
@@ -73,7 +71,6 @@ public class JspValidator extends AbstractValidator implements IValidator
 			return null;
 		ValidationResult result = new ValidationResult();
 		final IReporter reporter = result.getReporter(monitor);
-		reporter.removeAllMessages(this);
 		validateFile((IFile)resource, reporter);
 		return result;
 	}
@@ -87,6 +84,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		IStructuredModel model = null;
 		try
 		{
+			file.deleteMarkers(MARKER_ID, false, IResource.DEPTH_ZERO);
 			model = StructuredModelManager.getModelManager().getModelForRead(file);
 			IDOMModel domModel = (IDOMModel)model;
 			IDOMDocument domDoc = domModel.getDocument();
@@ -135,18 +133,29 @@ public class JspValidator extends AbstractValidator implements IValidator
 				IType type = project.findType(className);
 				if (type == null || !type.exists())
 				{
-					LocalizedMessage message = new LocalizedMessage(IMessage.HIGH_SEVERITY,
-						"ActionBean not found.", file);
-					int start = attr.getValueRegionStartOffset();
-					int length = attr.getValueRegionText().length();
-					int lineNo = doc.getLineOfOffset(start);
-					message.setLineNo(lineNo);
-					message.setOffset(start);
-					message.setLength(length);
-					message.setAttribute("problemType", MISSING_ACTION_BEAN);
-					message.setAttribute("errorValue", attr.getValue());
-
-					reporter.addMessage(this, message);
+					try
+					{
+						int start = attr.getValueRegionStartOffset();
+						int length = attr.getValueRegionText().length();
+						int lineNo = doc.getLineOfOffset(start);
+						IMarker marker = file.createMarker(MARKER_ID);
+						marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
+						marker.setAttribute(IMarker.PRIORITY, IMarker.PRIORITY_HIGH);
+						marker.setAttribute(IMarker.MESSAGE, "ActionBean not found.");
+						marker.setAttribute(IMarker.LINE_NUMBER, lineNo);
+						if (start != 0)
+						{
+							marker.setAttribute(IMarker.CHAR_START, start);
+							marker.setAttribute(IMarker.CHAR_END, start + length);
+						}
+						// Adds custom attributes.
+						marker.setAttribute("problemType", MISSING_ACTION_BEAN);
+						marker.setAttribute("errorValue", attr.getValue());
+					}
+					catch (CoreException e)
+					{
+						Activator.log(Status.ERROR, "Failed to create a custom marker.", e);
+					}
 				}
 			}
 		}
@@ -159,59 +168,6 @@ public class JspValidator extends AbstractValidator implements IValidator
 			{
 				validateElement((IDOMElement)child, file, doc, reporter);
 			}
-		}
-	}
-
-	protected class LocalizedMessage extends Message
-	{
-
-		private String _message = null;
-
-		public LocalizedMessage(int severity, String messageText)
-		{
-			this(severity, messageText, null);
-		}
-
-		public LocalizedMessage(int severity, String messageText, IResource targetObject)
-		{
-			this(severity, messageText, (Object)targetObject);
-		}
-
-		public LocalizedMessage(int severity, String messageText, Object targetObject)
-		{
-			super(null, severity, null);
-			setLocalizedMessage(messageText);
-			setTargetObject(targetObject);
-		}
-
-		public void setLocalizedMessage(String message)
-		{
-			_message = message;
-		}
-
-		public String getLocalizedMessage()
-		{
-			return _message;
-		}
-
-		public String getText()
-		{
-			return getLocalizedMessage();
-		}
-
-		public String getText(ClassLoader cl)
-		{
-			return getLocalizedMessage();
-		}
-
-		public String getText(Locale l)
-		{
-			return getLocalizedMessage();
-		}
-
-		public String getText(Locale l, ClassLoader cl)
-		{
-			return getLocalizedMessage();
 		}
 	}
 
