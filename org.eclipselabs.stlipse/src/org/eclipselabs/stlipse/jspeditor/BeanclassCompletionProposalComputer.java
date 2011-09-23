@@ -48,6 +48,7 @@ import org.eclipse.wst.xml.ui.internal.contentassist.AbstractXMLCompletionPropos
 import org.eclipse.wst.xml.ui.internal.contentassist.ContentAssistRequest;
 import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposalComputer;
 import org.eclipselabs.stlipse.Activator;
+import org.eclipselabs.stlipse.util.ClassNameUtil;
 
 /**
  * The super class {@link AbstractXMLCompletionProposalComputer} will be available to API.
@@ -182,10 +183,11 @@ public class BeanclassCompletionProposalComputer extends DefaultXMLCompletionPro
 			};
 
 			SearchEngine searchEngine = new SearchEngine();
-			searchEngine.searchAllTypeNames(null, SearchPattern.R_EXACT_MATCH,
-				input.toCharArray(), SearchPattern.R_CAMELCASE_MATCH,
-				IJavaSearchConstants.DECLARATIONS | IJavaSearchConstants.IMPLEMENTORS, scope,
-				requestor, IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH, null);
+			searchEngine.searchAllTypeNames(ClassNameUtil.getPackage(input).toCharArray(),
+				SearchPattern.R_PREFIX_MATCH, ClassNameUtil.getTypeName(input).toCharArray(),
+				SearchPattern.R_CAMELCASE_MATCH, IJavaSearchConstants.DECLARATIONS
+					| IJavaSearchConstants.IMPLEMENTORS, scope, requestor,
+				IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH, null);
 		}
 		catch (CoreException e)
 		{
