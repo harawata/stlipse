@@ -6,7 +6,7 @@
       <proposalComputer
             activate="true"
             categoryId="org.eclipse.jst.jsp.ui.proposalCategory.jsp"
-            class="org.eclipselabs.stlipse.jspeditor.BeanclassCompletionProposalComputer"
+            class="org.eclipselabs.stlipse.jspeditor.JspCompletionProposalComputer"
             id="org.eclipselabs.stlipse.proposalComputer.beanclass">
          <contentType
                id="org.eclipse.jst.jsp.core.jspsource">
@@ -137,5 +137,19 @@
             verticalRulerPreferenceKey="org.eclipselabs.stlipse.stripesJspProblem.verticalRuler"
             verticalRulerPreferenceValue="true">
       </specification>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.eclipselabs.stlipse.StlipsePreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="org.eclipselabs.stlipse.StlipsePreferencePage"
+            id="org.eclipselabs.stlipse.preferencePage"
+            name="Stlipse">
+      </page>
    </extension>
 </plugin>

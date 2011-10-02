@@ -18,6 +18,8 @@ public class Activator extends AbstractUIPlugin
 	// The plug-in ID
 	public static final String PLUGIN_ID = "org.eclipselabs.stlipse"; //$NON-NLS-1$
 
+	public static final String DEFAULT_TAG_PREFIXES = "stripes, ss, sd";
+
 	// The shared instance
 	private static Activator plugin;
 
