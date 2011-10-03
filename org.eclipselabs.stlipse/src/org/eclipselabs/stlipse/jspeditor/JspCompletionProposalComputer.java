@@ -396,13 +396,18 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 	private boolean isActionBeanProperty(String tagName, String attributeName)
 	{
 		String suffix = getStripesTagSuffix(tagName);
-		return "name".equalsIgnoreCase(attributeName) && isSuggestable(suffix);
+		return isSuggestableAttribute(attributeName) && isSuggestableTag(suffix);
 	}
 
-	private boolean isSuggestable(String tag)
+	private boolean isSuggestableAttribute(String attribute)
 	{
-		final List<String> tags = Arrays.asList("checkbox", "file", "hidden", "password",
-			"radio", "select", "text", "textarea");
+		return "name".equalsIgnoreCase(attribute) || "for".equalsIgnoreCase(attribute);
+	}
+
+	private boolean isSuggestableTag(String tag)
+	{
+		final List<String> tags = Arrays.asList("checkbox", "file", "hidden", "label",
+			"password", "radio", "select", "text", "textarea");
 		return tags.contains(tag);
 	}
 
