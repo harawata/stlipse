@@ -2,7 +2,7 @@
 <feature
       id="org.eclipselabs.stlipse.templates.feature"
       label="Stlipse Templates"
-      version="1.0.3.qualifier"
+      version="1.0.4.qualifier"
       provider-name="Iwao AVE!">
 
    <description url="http://eclipselabs.org/p/stlipse/">
