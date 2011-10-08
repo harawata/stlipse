@@ -1,3 +1,7 @@
+/*-
+ * Copyright (C) 2011 by Iwao AVE!
+ * This program is made available under the terms of the MIT License.
+ */
 
 package org.eclipselabs.stlipse.javaeditor;
 
