@@ -12,6 +12,7 @@ import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.util.ClassNameUtil;
 import org.eclipselabs.stlipse.util.ProjectUtil;
 
@@ -61,7 +62,7 @@ public class NewBeanclassProposal implements ICompletionProposal
 
 	public Image getImage()
 	{
-		return null;
+		return Activator.getIcon();
 	}
 
 	public IContextInformation getContextInformation()

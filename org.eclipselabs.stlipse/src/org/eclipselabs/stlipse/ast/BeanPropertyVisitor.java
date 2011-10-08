@@ -38,13 +38,16 @@ public class BeanPropertyVisitor extends ASTVisitor
 
 	private boolean prefixMatch;
 
+	private boolean includeReadOnly;
+
 	private Map<String, ITypeBinding> fields;
 
 	public BeanPropertyVisitor(
 		IJavaProject project,
 		Map<String, ITypeBinding> fields,
 		String searchStr,
-		boolean prefixMatch)
+		boolean prefixMatch,
+		boolean includeReadOnly)
 	{
 		super();
 		this.project = project;
@@ -52,13 +55,14 @@ public class BeanPropertyVisitor extends ASTVisitor
 		int bracePos = searchStr.indexOf("[");
 		this.searchStr = bracePos > -1 ? searchStr.substring(0, bracePos) : searchStr;
 		this.prefixMatch = prefixMatch;
+		this.includeReadOnly = includeReadOnly;
 	}
 
 	@Override
 	public boolean visit(FieldDeclaration node)
 	{
 		int modifiers = node.getModifiers();
-		if (Modifier.isPublic(modifiers) && !Modifier.isFinal(modifiers))
+		if (Modifier.isPublic(modifiers) && (includeReadOnly || !Modifier.isFinal(modifiers)))
 		{
 			// public field
 			@SuppressWarnings("unchecked")
@@ -81,14 +85,17 @@ public class BeanPropertyVisitor extends ASTVisitor
 		if (Modifier.isPublic(node.getModifiers()))
 		{
 			String methodName = node.getName().toString();
-			Type type = node.getReturnType2();
-			if (methodName.startsWith("set") && methodName.length() > 4
-				&& type.isPrimitiveType()
-				&& PrimitiveType.VOID.equals(((PrimitiveType)type).getPrimitiveTypeCode())
-				&& node.parameters().size() == 1)
+			if (includeReadOnly && isGetter(node))
 			{
-				// setter
-				String fieldName = getFieldNameFromSetter(methodName);
+				String fieldName = getFieldNameFromAccessor(methodName);
+				if (matched(fieldName))
+				{
+					addType(fields, fieldName, node.getReturnType2());
+				}
+			}
+			else if (isSetter(node))
+			{
+				String fieldName = getFieldNameFromAccessor(methodName);
 				if (matched(fieldName))
 				{
 					SingleVariableDeclaration param = (SingleVariableDeclaration)node.parameters()
@@ -98,6 +105,27 @@ public class BeanPropertyVisitor extends ASTVisitor
 			}
 		}
 		return false;
+	}
+
+	private boolean isGetter(MethodDeclaration node)
+	{
+		String methodName = node.getName().toString();
+		return methodName.startsWith("get") && methodName.length() > 3 && !isReturnVoid(node)
+			&& node.parameters().size() == 0;
+	}
+
+	private boolean isSetter(MethodDeclaration node)
+	{
+		String methodName = node.getName().toString();
+		return methodName.startsWith("set") && methodName.length() > 3 && isReturnVoid(node)
+			&& node.parameters().size() == 1;
+	}
+
+	private boolean isReturnVoid(MethodDeclaration node)
+	{
+		Type type = node.getReturnType2();
+		return type.isPrimitiveType()
+			&& PrimitiveType.VOID.equals(((PrimitiveType)type).getPrimitiveTypeCode());
 	}
 
 	@Override
@@ -123,7 +151,7 @@ public class BeanPropertyVisitor extends ASTVisitor
 						parser.setResolveBindings(true);
 						CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
 						astUnit.accept(new BeanPropertyVisitor(project, fields, searchStr,
-							prefixMatch));
+							prefixMatch, includeReadOnly));
 					}
 				}
 			}
@@ -134,7 +162,7 @@ public class BeanPropertyVisitor extends ASTVisitor
 		}
 	}
 
-	private String getFieldNameFromSetter(String methodName)
+	public static String getFieldNameFromAccessor(String methodName)
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append(Character.toLowerCase(methodName.charAt(3)));

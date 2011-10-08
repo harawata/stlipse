@@ -36,12 +36,12 @@ public class BeanclassHyperlink implements IHyperlink
 
 	public String getTypeLabel()
 	{
-		return null;
+		return "Open ActionBean class in Java editor.";
 	}
 
 	public String getHyperlinkText()
 	{
-		return null;
+		return "Open ActionBean class in Java editor.";
 	}
 
 	public void open()

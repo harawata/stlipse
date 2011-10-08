@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -27,7 +26,6 @@ import org.eclipse.jdt.core.Flags;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
@@ -101,6 +99,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 			// contentAssistRequest.getMacros().clear();
 			// return;
 			// }
+
 			String currentValue = null;
 			if (contentAssistRequest.getRegion().getType() == DOMRegionContext.XML_TAG_ATTRIBUTE_VALUE)
 				currentValue = contentAssistRequest.getText();
@@ -161,50 +160,19 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 						String qualifiedName = beanclassAttribute.getNodeValue();
 						IResource resource = getResource(contentAssistRequest);
 						IJavaProject project = getJavaProject(resource);
-						try
+						boolean includeReadOnly = "label".equals(getStripesTagSuffix(tagName));
+						Map<String, ITypeBinding> fields = BeanParser.searchFields(project,
+							qualifiedName, matchString, includeReadOnly, -1);
+						List<ICompletionProposal> proposals = BeanParser.buildFieldNameProposal(
+							fields, matchString, start, length);
+						for (ICompletionProposal proposal : proposals)
 						{
-							Map<String, ITypeBinding> fields = BeanParser.searchFields(project,
-								qualifiedName, matchString, -1);
-							List<ICompletionProposal> proposals = buildFieldNameProposal(
-								fields, matchString, start, length);
-							for (ICompletionProposal proposal : proposals)
-							{
-								contentAssistRequest.addProposal(proposal);
-							}
-						}
-						catch (JavaModelException e)
-						{
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							contentAssistRequest.addProposal(proposal);
 						}
 					}
 				}
 			}
 		}
-	}
-
-	private List<ICompletionProposal> buildFieldNameProposal(Map<String, ITypeBinding> fields,
-		final String input, final int offset, final int replacementLength)
-	{
-		int lastDot = input.lastIndexOf(".");
-		String prefix = lastDot > -1 ? input.substring(0, lastDot) : "";
-		List<ICompletionProposal> proposalList = new ArrayList<ICompletionProposal>();
-		for (Entry<String, ITypeBinding> fieldEntry : fields.entrySet())
-		{
-			String fieldName = fieldEntry.getKey();
-			ITypeBinding fieldType = fieldEntry.getValue();
-			StringBuilder replaceStr = new StringBuilder();
-			if (lastDot > -1)
-				replaceStr.append(prefix).append('.');
-			replaceStr.append(fieldName);
-			StringBuilder displayStr = new StringBuilder();
-			displayStr.append(fieldName).append(" - ").append(fieldType.getQualifiedName());
-			ICompletionProposal proposal = new CompletionProposal(replaceStr.toString(),
-				offset, replacementLength, replaceStr.length(), null, displayStr.toString(),
-				null, null);
-			proposalList.add(proposal);
-		}
-		return proposalList;
 	}
 
 	protected static List<ICompletionProposal> getBeanclassProposals(
@@ -247,7 +215,8 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 					int cursorPosition = replacementString.length();
 					ICompletionProposal proposal = new CompletionProposal(
 						replacementString.toString(), replacementOffset, replacementLength,
-						cursorPosition, null, displayString.toString(), null, null);
+						cursorPosition, Activator.getIcon(), displayString.toString(), null,
+						null);
 					proposalList.add(proposal);
 				}
 

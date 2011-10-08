@@ -5,8 +5,18 @@
 
 package org.eclipselabs.stlipse;
 
+import java.net.URL;
+
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -17,6 +27,8 @@ public class Activator extends AbstractUIPlugin
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "org.eclipselabs.stlipse"; //$NON-NLS-1$
+
+	public static final String IMAGE_ID = "stripes.image"; //$NON-NLS-1$
 
 	public static final String DEFAULT_TAG_PREFIXES = "stripes, ss, sd";
 
@@ -52,6 +64,17 @@ public class Activator extends AbstractUIPlugin
 		super.stop(context);
 	}
 
+	@Override
+	protected void initializeImageRegistry(ImageRegistry reg)
+	{
+		Bundle bundle = Platform.getBundle(PLUGIN_ID);
+		IPath path = new Path("icons/stripes.png");
+		URL url = FileLocator.find(bundle, path, null);
+		ImageDescriptor desc = ImageDescriptor.createFromURL(url);
+		getImageRegistry().put(IMAGE_ID, desc);
+		super.initializeImageRegistry(reg);
+	}
+
 	/**
 	 * Returns the shared instance
 	 * 
@@ -82,4 +105,11 @@ public class Activator extends AbstractUIPlugin
 		log(new Status(severity, PLUGIN_ID, code, message, t));
 	}
 
+	public static Image getIcon()
+	{
+		return Activator.getDefault()
+			.getImageRegistry()
+			.getDescriptor(Activator.IMAGE_ID)
+			.createImage();
+	}
 }

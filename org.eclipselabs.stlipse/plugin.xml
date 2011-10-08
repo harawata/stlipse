@@ -152,4 +152,25 @@
             name="Stlipse">
       </page>
    </extension>
+   <extension
+         id="org.eclipselabs.stlipse.javaStringCompletionProposalComputer"
+         name="Stripes Proposal"
+         point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+      <javaCompletionProposalComputer
+            activate="true"
+            categoryId="org.eclipselabs.stlipse.javaStringProposalCategory"
+            class="org.eclipselabs.stlipse.javaeditor.JavaCompletionProposalComputer">
+         <partition
+               type="__java_string">
+         </partition>
+      </javaCompletionProposalComputer>
+   </extension>
+   <extension
+         id="javaStringProposalCategory"
+         name="Stripes Proposals"
+         point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+      <proposalCategory
+            icon="icons/stripes.png">
+      </proposalCategory>
+   </extension>
 </plugin>
