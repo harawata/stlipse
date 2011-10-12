@@ -9,6 +9,9 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.IMarkerResolutionGenerator2;
 
+/**
+ * @author Iwao AVE!
+ */
 public class JspMarkerResolutionGenerator implements IMarkerResolutionGenerator2
 {
 

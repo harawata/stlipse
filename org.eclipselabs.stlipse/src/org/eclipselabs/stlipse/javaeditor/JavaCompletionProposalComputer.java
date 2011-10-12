@@ -31,6 +31,9 @@ import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.ast.BeanParser;
 import org.eclipselabs.stlipse.ast.BeanPropertyVisitor;
 
+/**
+ * @author Iwao AVE!
+ */
 public class JavaCompletionProposalComputer implements IJavaCompletionProposalComputer
 {
 

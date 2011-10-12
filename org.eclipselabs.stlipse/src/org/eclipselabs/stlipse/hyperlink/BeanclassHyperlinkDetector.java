@@ -29,6 +29,9 @@ import org.eclipselabs.stlipse.util.ProjectUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+/**
+ * @author Iwao AVE!
+ */
 public class BeanclassHyperlinkDetector extends AbstractHyperlinkDetector
 {
 
