@@ -169,7 +169,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		IStructuredDocument doc, IDOMElement element, IDOMAttr attr)
 	{
 		String property = attr.getValue().trim();
-		if (property.startsWith("$"))
+		if (containsElExpression(property))
 			return;
 
 		Node formElement = JspCompletionProposalComputer.getFormElement(element);
@@ -196,7 +196,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 	{
 		String className = attr.getValue().trim();
 		// Ignore EL expression.
-		if (className.startsWith("$"))
+		if (containsElExpression(className))
 			return;
 
 		IType type = project.findType(className);
@@ -205,6 +205,22 @@ public class JspValidator extends AbstractValidator implements IValidator
 			addMarker(file, doc, attr, MISSING_ACTION_BEAN, IMarker.SEVERITY_ERROR,
 				IMarker.PRIORITY_HIGH, "ActionBean not found.");
 		}
+	}
+
+	private boolean containsElExpression(String str)
+	{
+		boolean inIndexedProperty = false;
+		for (int i = 0; i < str.length(); i++)
+		{
+			char c = str.charAt(i);
+			if (!inIndexedProperty && c == '$')
+				return true;
+			else if (!inIndexedProperty && c == '[')
+				inIndexedProperty = true;
+			else if (c == ']')
+				inIndexedProperty = false;
+		}
+		return false;
 	}
 
 	private void addMarker(IFile file, IStructuredDocument doc, IDOMAttr attr,
