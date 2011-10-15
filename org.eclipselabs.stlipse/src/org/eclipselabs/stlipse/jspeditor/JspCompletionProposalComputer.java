@@ -137,11 +137,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 			}
 			else if (isActionBeanProperty(tagName, attributeName))
 			{
-				Node parentNode = node.getParentNode();
-				while (parentNode != null && !isFormTag(parentNode.getNodeName()))
-				{
-					parentNode = parentNode.getParentNode();
-				}
+				Node parentNode = getFormElement(node);
 				if (parentNode == null)
 				{
 					Activator.log(Status.WARNING, "Stripes form tag was not found.");
@@ -162,7 +158,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 						IJavaProject project = getJavaProject(resource);
 						boolean includeReadOnly = "label".equals(getStripesTagSuffix(tagName));
 						Map<String, ITypeBinding> fields = BeanParser.searchFields(project,
-							qualifiedName, matchString, includeReadOnly, -1);
+							qualifiedName, matchString, includeReadOnly, -1, false);
 						List<ICompletionProposal> proposals = BeanParser.buildFieldNameProposal(
 							fields, matchString, start, length);
 						for (ICompletionProposal proposal : proposals)
@@ -347,7 +343,17 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 		return packageList;
 	}
 
-	private boolean isFormTag(String tagName)
+	public static Node getFormElement(Node node)
+	{
+		Node parentNode = node.getParentNode();
+		while (parentNode != null && !isFormTag(parentNode.getNodeName()))
+		{
+			parentNode = parentNode.getParentNode();
+		}
+		return parentNode;
+	}
+
+	private static boolean isFormTag(String tagName)
 	{
 		String suffix = getStripesTagSuffix(tagName);
 		return "form".equals(suffix);
@@ -362,25 +368,25 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 		return isActionBeanProperty(tagName, attributeName);
 	}
 
-	private boolean isActionBeanProperty(String tagName, String attributeName)
+	public static boolean isActionBeanProperty(String tagName, String attributeName)
 	{
 		String suffix = getStripesTagSuffix(tagName);
 		return isSuggestableAttribute(attributeName) && isSuggestableTag(suffix);
 	}
 
-	private boolean isSuggestableAttribute(String attribute)
+	private static boolean isSuggestableAttribute(String attribute)
 	{
 		return "name".equalsIgnoreCase(attribute) || "for".equalsIgnoreCase(attribute);
 	}
 
-	private boolean isSuggestableTag(String tag)
+	public static boolean isSuggestableTag(String tag)
 	{
 		final List<String> tags = Arrays.asList("checkbox", "file", "hidden", "label",
 			"password", "radio", "select", "text", "textarea");
 		return tags.contains(tag);
 	}
 
-	private String getStripesTagSuffix(String tagName)
+	public static String getStripesTagSuffix(String tagName)
 	{
 		final String prefix = getStripesTagPrefix(tagName);
 		if (prefix != null && prefix.length() + 1 < tagName.length())
@@ -388,7 +394,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 		return null;
 	}
 
-	private String getStripesTagPrefix(String tagName)
+	private static String getStripesTagPrefix(String tagName)
 	{
 		Set<String> prefixes = getPrefixesFromPreference();
 		int prefixLength = tagName.indexOf(':');
@@ -401,7 +407,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 		return null;
 	}
 
-	private Set<String> getPrefixesFromPreference()
+	private static Set<String> getPrefixesFromPreference()
 	{
 		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		List<String> list = Arrays.asList(store.getString("tagPrefixes").split(" *, *"));

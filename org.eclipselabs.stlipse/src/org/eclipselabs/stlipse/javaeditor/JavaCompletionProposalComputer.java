@@ -68,7 +68,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 							{
 								String input = String.valueOf(coreContext.getToken());
 								Map<String, ITypeBinding> fields = BeanParser.searchFields(
-									javaContext.getProject(), unit, input, false, -1);
+									javaContext.getProject(), unit, input, false, -1, false);
 								proposals.addAll(BeanParser.buildFieldNameProposal(fields,
 									input, coreContext.getTokenStart() + 1, replacementLength));
 							}
@@ -87,7 +87,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 									matchStr.append('.').append(token);
 									Map<String, ITypeBinding> fields = BeanParser.searchFields(
 										javaContext.getProject(), unit, matchStr.toString(),
-										false, -1);
+										false, -1, false);
 									proposals.addAll(BeanParser.buildFieldNameProposal(fields,
 										String.valueOf(token), coreContext.getTokenStart() + 1,
 										replacementLength));

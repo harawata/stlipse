@@ -31,13 +31,15 @@ import org.eclipselabs.stlipse.Activator;
 public class BeanParser
 {
 	public static Map<String, ITypeBinding> searchFields(IJavaProject project,
-		String qualifiedName, String matchStr, boolean includeReadOnly, int currentIdx)
+		String qualifiedName, String matchStr, boolean includeReadOnly, int currentIdx,
+		boolean isValidation)
 	{
 		try
 		{
 			IType type = project.findType(qualifiedName);
 			ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
-			return searchFields(project, unit, matchStr, includeReadOnly, currentIdx);
+			return searchFields(project, unit, matchStr, includeReadOnly, currentIdx,
+				isValidation);
 		}
 		catch (JavaModelException e)
 		{
@@ -47,7 +49,8 @@ public class BeanParser
 	}
 
 	public static Map<String, ITypeBinding> searchFields(IJavaProject project,
-		ICompilationUnit unit, String matchStr, boolean includeReadOnly, int currentIdx)
+		ICompilationUnit unit, String matchStr, boolean includeReadOnly, int currentIdx,
+		boolean isValidation)
 	{
 		String searchStr;
 		int startIdx = currentIdx + 1;
@@ -68,7 +71,7 @@ public class BeanParser
 				parser.setResolveBindings(true);
 				CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
 				astUnit.accept(new BeanPropertyVisitor(project, fieldMap, searchStr,
-					dotIdx == -1, includeReadOnly));
+					!isValidation && dotIdx == -1, includeReadOnly));
 				if (dotIdx > -1 && fieldMap.size() > 0)
 				{
 					ITypeBinding binding = fieldMap.values().iterator().next();
@@ -76,11 +79,11 @@ public class BeanParser
 					{
 						ITypeBinding[] arguments = binding.getTypeArguments();
 						return searchFields(project, arguments[0].getQualifiedName(), matchStr,
-							includeReadOnly, dotIdx);
+							includeReadOnly, dotIdx, isValidation);
 					}
 					else
 						return searchFields(project, binding.getQualifiedName(), matchStr,
-							includeReadOnly, dotIdx);
+							includeReadOnly, dotIdx, isValidation);
 				}
 			}
 		}

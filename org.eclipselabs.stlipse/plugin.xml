@@ -173,4 +173,13 @@
             icon="icons/stripes.png">
       </proposalCategory>
    </extension>
+   <extension
+         point="org.eclipse.jdt.apt.core.annotationProcessorFactory">
+      <factories
+            enableDefault="true">
+         <factory
+               class="org.eclipselabs.stlipse.apt.StlipseAnnotationProcessorFactory">
+         </factory>
+      </factories>
+   </extension>
 </plugin>
