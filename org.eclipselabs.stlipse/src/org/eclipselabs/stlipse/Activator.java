@@ -7,7 +7,11 @@ package org.eclipselabs.stlipse;
 
 import java.net.URL;
 
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
@@ -35,6 +39,8 @@ public class Activator extends AbstractUIPlugin
 	// The shared instance
 	private static Activator plugin;
 
+	private IResourceChangeListener resourceChangeListener;
+
 	/**
 	 * The constructor
 	 */
@@ -51,6 +57,10 @@ public class Activator extends AbstractUIPlugin
 	{
 		super.start(context);
 		plugin = this;
+
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		resourceChangeListener = new ResourceChangeListener();
+		workspace.addResourceChangeListener(resourceChangeListener);
 	}
 
 	/*
@@ -62,6 +72,10 @@ public class Activator extends AbstractUIPlugin
 	{
 		plugin = null;
 		super.stop(context);
+
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		if (workspace != null && resourceChangeListener != null)
+			workspace.removeResourceChangeListener(resourceChangeListener);
 	}
 
 	@Override
@@ -87,7 +101,9 @@ public class Activator extends AbstractUIPlugin
 
 	public static void log(Status status)
 	{
-		getDefault().getLog().log(status);
+		ILog log = getDefault().getLog();
+		if (log != null)
+			log.log(status);
 	}
 
 	public static void log(int severity, String message)

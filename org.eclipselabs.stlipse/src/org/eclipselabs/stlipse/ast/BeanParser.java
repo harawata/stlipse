@@ -37,9 +37,11 @@ public class BeanParser
 		try
 		{
 			IType type = project.findType(qualifiedName);
-			ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
-			return searchFields(project, unit, matchStr, includeReadOnly, currentIdx,
-				isValidation);
+			if (type != null)
+			{
+				ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
+				return searchFields(project, unit, matchStr, includeReadOnly, currentIdx, isValidation);
+			}
 		}
 		catch (JavaModelException e)
 		{
