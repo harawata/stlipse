@@ -34,11 +34,11 @@ import org.eclipselabs.stlipse.Activator;
  */
 public class BeanClassCache
 {
-	private static final Map<IProject, List<BeanClassInfo>> beanClassCache = new ConcurrentHashMap<IProject, List<BeanClassInfo>>();
+	private static final Map<IProject, List<BeanClassInfo>> projectCache = new ConcurrentHashMap<IProject, List<BeanClassInfo>>();
 
 	public static List<BeanClassInfo> getBeanClassInfo(IJavaProject project)
 	{
-		List<BeanClassInfo> beanClassList = beanClassCache.get(project.getProject());
+		List<BeanClassInfo> beanClassList = projectCache.get(project.getProject());
 		if (beanClassList == null)
 			beanClassList = buildBeanClassCache(project);
 
@@ -47,12 +47,12 @@ public class BeanClassCache
 
 	public static void clearBeanClassCache(IProject project)
 	{
-		beanClassCache.remove(project);
+		projectCache.remove(project);
 	}
 
 	public static void add(IProject project, String packageName, String simpleTypeName)
 	{
-		List<BeanClassInfo> beanClassList = beanClassCache.get(project);
+		List<BeanClassInfo> beanClassList = projectCache.get(project);
 		if (beanClassList != null)
 		{
 			BeanClassInfo beanClassInfo = new BeanClassInfo(packageName.toCharArray(),
@@ -64,7 +64,7 @@ public class BeanClassCache
 
 	public static void remove(IProject project, String packageName, String simpleTypeName)
 	{
-		List<BeanClassInfo> beanClassList = beanClassCache.get(project);
+		List<BeanClassInfo> beanClassList = projectCache.get(project);
 		if (beanClassList != null)
 		{
 			beanClassList.remove(new BeanClassInfo(packageName.toCharArray(),
@@ -75,7 +75,7 @@ public class BeanClassCache
 	private static List<BeanClassInfo> buildBeanClassCache(IJavaProject project)
 	{
 		final List<BeanClassInfo> beanClassList = Collections.synchronizedList(new ArrayList<BeanClassInfo>());
-		beanClassCache.put(project.getProject(), beanClassList);
+		projectCache.put(project.getProject(), beanClassList);
 
 		final List<String> packageList = getActionResolverPackages(project.getProject());
 		if (packageList.size() == 0)

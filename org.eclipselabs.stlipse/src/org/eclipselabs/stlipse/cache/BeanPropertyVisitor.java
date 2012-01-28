@@ -3,7 +3,7 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse.ast;
+package org.eclipselabs.stlipse.cache;
 
 import java.util.List;
 import java.util.Map;

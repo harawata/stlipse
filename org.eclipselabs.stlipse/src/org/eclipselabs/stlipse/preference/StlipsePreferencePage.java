@@ -3,12 +3,13 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse;
+package org.eclipselabs.stlipse.preference;
 
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipselabs.stlipse.Activator;
 
 public class StlipsePreferencePage extends FieldEditorPreferencePage implements
 	IWorkbenchPreferencePage

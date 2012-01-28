@@ -21,8 +21,8 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipselabs.stlipse.ast.BeanParser;
 import org.eclipselabs.stlipse.cache.BeanClassCache;
+import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 
 /**
  * @author Iwao AVE!
@@ -80,7 +80,7 @@ public class ResourceChangeListener implements IResourceChangeListener
 										BeanClassCache.add(project, packageName, simpleTypeName);
 									// Remove bean property cache.
 									String qualifiedName = type.getFullyQualifiedName();
-									BeanParser.clearBeanPropertyCache(project, qualifiedName);
+									BeanPropertyCache.clearBeanPropertyCache(project, qualifiedName);
 								}
 								break;
 							default:

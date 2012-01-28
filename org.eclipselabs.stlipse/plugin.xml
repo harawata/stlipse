@@ -17,8 +17,8 @@
          id="StlipseJSPSourceValidator"
          point="org.eclipse.wst.sse.ui.sourcevalidation">
       <validator
-            class="org.eclipselabs.stlipse.validation.JspValidator"
-            id="org.eclipselabs.stlipse.validation.JspValidator"
+            class="org.eclipselabs.stlipse.jspeditor.JspValidator"
+            id="org.eclipselabs.stlipse.jspeditor.JspValidator"
             scope="total">
          <contentTypeIdentifier
                id="org.eclipse.jst.jsp.core.jspsource">
@@ -40,7 +40,7 @@
          point="org.eclipse.wst.validation.validatorV2">
       <validator
             build="true"
-            class="org.eclipselabs.stlipse.validation.JspValidator"
+            class="org.eclipselabs.stlipse.jspeditor.JspValidator"
             manual="true"
             markerId="org.eclipselabs.stlipse.stripesJspProblem"
             sourceid="StlipseJSPSourceValidator"
@@ -75,7 +75,7 @@
    <extension
          point="org.eclipse.ui.ide.markerResolution">
       <markerResolutionGenerator
-            class="org.eclipselabs.stlipse.validation.JspMarkerResolutionGenerator"
+            class="org.eclipselabs.stlipse.jspeditor.JspMarkerResolutionGenerator"
             markerType="org.eclipselabs.stlipse.stripesJspProblem">
       </markerResolutionGenerator>
    </extension>
@@ -102,7 +102,7 @@
    <extension
          point="org.eclipse.wst.sse.ui.editorConfiguration">
       <provisionalConfiguration
-            class="org.eclipselabs.stlipse.validation.JspQuickAssistProcessor"
+            class="org.eclipselabs.stlipse.jspeditor.JspQuickAssistProcessor"
             target="org.eclipse.jst.jsp.JSP_DIRECTIVE"
             type="org.eclipse.jface.text.quickassist.IQuickAssistProcessor">
       </provisionalConfiguration>
@@ -141,13 +141,13 @@
    <extension
          point="org.eclipse.core.runtime.preferences">
       <initializer
-            class="org.eclipselabs.stlipse.StlipsePreferenceInitializer">
+            class="org.eclipselabs.stlipse.preference.StlipsePreferenceInitializer">
       </initializer>
    </extension>
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
-            class="org.eclipselabs.stlipse.StlipsePreferencePage"
+            class="org.eclipselabs.stlipse.preference.StlipsePreferencePage"
             id="org.eclipselabs.stlipse.preferencePage"
             name="Stlipse">
       </page>

@@ -3,10 +3,11 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse;
+package org.eclipselabs.stlipse.preference;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipselabs.stlipse.Activator;
 
 /**
  * @author Iwao AVE!

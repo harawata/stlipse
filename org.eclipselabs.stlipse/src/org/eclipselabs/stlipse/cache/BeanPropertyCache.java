@@ -3,7 +3,7 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse.ast;
+package org.eclipselabs.stlipse.cache;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,18 +24,18 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipselabs.stlipse.Activator;
-import org.eclipselabs.stlipse.cache.BeanPropertyInfo;
+import org.eclipselabs.stlipse.javaeditor.JavaCompletionProposal;
 
 /**
  * @author Iwao AVE!
  */
-public class BeanParser
+public class BeanPropertyCache
 {
-	private static final Map<IProject, Map<String, BeanPropertyInfo>> beanPropertyCache = new ConcurrentHashMap<IProject, Map<String, BeanPropertyInfo>>();
+	private static final Map<IProject, Map<String, BeanPropertyInfo>> projectCache = new ConcurrentHashMap<IProject, Map<String, BeanPropertyInfo>>();
 
 	public static void clearBeanPropertyCache(IProject project, String qualifiedName)
 	{
-		Map<String, BeanPropertyInfo> beans = beanPropertyCache.get(project);
+		Map<String, BeanPropertyInfo> beans = projectCache.get(project);
 		if (beans != null)
 		{
 			beans.remove(qualifiedName);
@@ -50,12 +50,12 @@ public class BeanParser
 	public static BeanPropertyInfo getBeanPropertyInfo(IJavaProject project,
 		String qualifiedName, ICompilationUnit compilationUnit)
 	{
-		Map<String, BeanPropertyInfo> beans = beanPropertyCache.get(project.getProject());
+		Map<String, BeanPropertyInfo> beans = projectCache.get(project.getProject());
 		BeanPropertyInfo beanProps = null;
 		if (beans == null)
 		{
 			beans = new ConcurrentHashMap<String, BeanPropertyInfo>();
-			beanPropertyCache.put(project.getProject(), beans);
+			projectCache.put(project.getProject(), beans);
 		}
 		else
 		{

@@ -3,7 +3,7 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse.ast;
+package org.eclipselabs.stlipse.javaeditor;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;

@@ -27,8 +27,8 @@ import org.eclipse.jdt.ui.text.java.JavaContentAssistInvocationContext;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipselabs.stlipse.Activator;
-import org.eclipselabs.stlipse.ast.BeanParser;
-import org.eclipselabs.stlipse.ast.BeanPropertyVisitor;
+import org.eclipselabs.stlipse.cache.BeanPropertyCache;
+import org.eclipselabs.stlipse.cache.BeanPropertyVisitor;
 
 /**
  * @author Iwao AVE!
@@ -65,12 +65,12 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 							if (replacementLength > -1)
 							{
 								String input = String.valueOf(coreContext.getToken());
-								Map<String, String> fields = BeanParser.searchFields(javaContext.getProject(),
+								Map<String, String> fields = BeanPropertyCache.searchFields(javaContext.getProject(),
 									unit.getType(element.getParent().getElementName()).getFullyQualifiedName(),
 									input,
 									false,
 									-1, false, unit);
-								proposals.addAll(BeanParser.buildFieldNameProposal(fields, input,
+								proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields, input,
 									coreContext.getTokenStart() + 1, replacementLength));
 							}
 						}
@@ -85,11 +85,11 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 								{
 									char[] token = coreContext.getToken();
 									matchStr.append('.').append(token);
-									Map<String, String> fields = BeanParser.searchFields(
+									Map<String, String> fields = BeanPropertyCache.searchFields(
 										javaContext.getProject(),
 										unit.getType(element.getParent().getElementName())
 											.getFullyQualifiedName(), matchStr.toString(), false, -1, false, unit);
-									proposals.addAll(BeanParser.buildFieldNameProposal(fields,
+									proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields,
 										String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
 								}
 							}

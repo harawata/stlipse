@@ -3,7 +3,7 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse.validation;
+package org.eclipselabs.stlipse.jspeditor;
 
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;

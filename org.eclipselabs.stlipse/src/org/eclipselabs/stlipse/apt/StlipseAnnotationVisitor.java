@@ -14,8 +14,8 @@ import java.util.Set;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipselabs.stlipse.Activator;
-import org.eclipselabs.stlipse.ast.BeanParser;
-import org.eclipselabs.stlipse.ast.BeanPropertyVisitor;
+import org.eclipselabs.stlipse.cache.BeanPropertyCache;
+import org.eclipselabs.stlipse.cache.BeanPropertyVisitor;
 
 import com.sun.mirror.apt.Messager;
 import com.sun.mirror.declaration.AnnotationMirror;
@@ -85,7 +85,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 							.getValue();
 						for (AnnotationValue property : properties)
 						{
-							Map<String, String> matched = BeanParser.searchFields(project, qualifiedName,
+							Map<String, String> matched = BeanPropertyCache.searchFields(project, qualifiedName,
 								property.getValue().toString(), false, -1, true, null);
 							if (matched.size() == 0)
 							{
@@ -133,7 +133,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 								StringBuilder searchStr = new StringBuilder(propertyName);
 								AnnotationValue annotationValue = validateOpt.getValue();
 								searchStr.append('.').append(annotationValue);
-								Map<String, String> matched = BeanParser.searchFields(project, qualifiedName,
+								Map<String, String> matched = BeanPropertyCache.searchFields(project, qualifiedName,
 									searchStr.toString(), false, -1, true, null);
 								if (matched.size() == 0)
 								{

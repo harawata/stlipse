@@ -39,7 +39,7 @@ import org.eclipse.wst.xml.ui.internal.contentassist.AbstractXMLCompletionPropos
 import org.eclipse.wst.xml.ui.internal.contentassist.ContentAssistRequest;
 import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposalComputer;
 import org.eclipselabs.stlipse.Activator;
-import org.eclipselabs.stlipse.ast.BeanParser;
+import org.eclipselabs.stlipse.cache.BeanClassCache;
 import org.eclipselabs.stlipse.cache.BeanClassInfo;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.eclipselabs.stlipse.util.ClassNameUtil;
@@ -145,9 +145,9 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 						IResource resource = getResource(contentAssistRequest);
 						IJavaProject project = getJavaProject(resource);
 						boolean includeReadOnly = "label".equals(getStripesTagSuffix(tagName));
-						Map<String, String> fields = BeanParser.searchFields(project, qualifiedName,
+						Map<String, String> fields = BeanPropertyCache.searchFields(project, qualifiedName,
 							matchString, includeReadOnly, -1, false, null);
-						List<ICompletionProposal> proposals = BeanParser.buildFieldNameProposal(
+						List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
 							fields, matchString, start, length);
 						for (ICompletionProposal proposal : proposals)
 						{

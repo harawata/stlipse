@@ -3,7 +3,7 @@
  * This program is made available under the terms of the MIT License.
  */
 
-package org.eclipselabs.stlipse.validation;
+package org.eclipselabs.stlipse.jspeditor;
 
 import java.util.Map;
 
@@ -34,8 +34,7 @@ import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMElement;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.eclipselabs.stlipse.Activator;
-import org.eclipselabs.stlipse.ast.BeanParser;
-import org.eclipselabs.stlipse.jspeditor.JspCompletionProposalComputer;
+import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -176,7 +175,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 			if (beanclassAttribute != null)
 			{
 				String qualifiedName = beanclassAttribute.getNodeValue();
-				Map<String, String> fields = BeanParser.searchFields(project, qualifiedName, property,
+				Map<String, String> fields = BeanPropertyCache.searchFields(project, qualifiedName, property,
 					false, -1, true, null);
 				if (fields.size() == 0)
 				{
