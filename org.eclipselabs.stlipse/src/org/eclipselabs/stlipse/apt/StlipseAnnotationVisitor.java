@@ -13,7 +13,6 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.ast.BeanParser;
 import org.eclipselabs.stlipse.ast.BeanPropertyVisitor;
@@ -39,10 +38,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 
 	private Messager messager;
 
-	public StlipseAnnotationVisitor(
-		IJavaProject project,
-		String qualifiedName,
-		Messager messager)
+	public StlipseAnnotationVisitor(IJavaProject project, String qualifiedName, Messager messager)
 	{
 		super();
 		this.project = project;
@@ -89,14 +85,12 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 							.getValue();
 						for (AnnotationValue property : properties)
 						{
-							Map<String, ITypeBinding> matched = BeanParser.searchFields(
-								project, qualifiedName, property.getValue().toString(), false,
-								-1, true);
+							Map<String, String> matched = BeanParser.searchFields(project, qualifiedName,
+								property.getValue().toString(), false, -1, true, null);
 							if (matched.size() == 0)
 							{
-								messager.printError(property.getPosition(),
-									"No writable property found: "
-										+ property.getValue().toString());
+								messager.printError(property.getPosition(), "No writable property found: "
+									+ property.getValue().toString());
 							}
 						}
 					}
@@ -106,8 +100,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 			{
 				// This seems to happen when the annotation value is missing or incomplete.
 				// Might be an Eclipse bug.
-				Activator.log(Status.INFO, "Exception thrown while processing @StrictBinding",
-					e);
+				Activator.log(Status.INFO, "Exception thrown while processing @StrictBinding", e);
 			}
 		}
 	}
@@ -140,9 +133,8 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 								StringBuilder searchStr = new StringBuilder(propertyName);
 								AnnotationValue annotationValue = validateOpt.getValue();
 								searchStr.append('.').append(annotationValue);
-								Map<String, ITypeBinding> matched = BeanParser.searchFields(
-									project, qualifiedName, searchStr.toString(), false, -1,
-									true);
+								Map<String, String> matched = BeanParser.searchFields(project, qualifiedName,
+									searchStr.toString(), false, -1, true, null);
 								if (matched.size() == 0)
 								{
 									messager.printError(annotationValue.getPosition(),

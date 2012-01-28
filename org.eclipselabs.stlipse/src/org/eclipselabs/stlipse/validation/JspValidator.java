@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
@@ -66,9 +65,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		{
 			for (int i = 0; i < uris.length && !reporter.isCancelled(); i++)
 			{
-				IFile file = ResourcesPlugin.getWorkspace()
-					.getRoot()
-					.getFile(new Path(uris[i]));
+				IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(uris[i]));
 				validateFile(file, reporter);
 			}
 		}
@@ -104,8 +101,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 				Node child = nodes.item(k);
 				if (child instanceof IDOMElement)
 				{
-					validateElement((IDOMElement)child, file, domDoc.getStructuredDocument(),
-						reporter);
+					validateElement((IDOMElement)child, file, domDoc.getStructuredDocument(), reporter);
 				}
 			}
 		}
@@ -180,8 +176,8 @@ public class JspValidator extends AbstractValidator implements IValidator
 			if (beanclassAttribute != null)
 			{
 				String qualifiedName = beanclassAttribute.getNodeValue();
-				Map<String, ITypeBinding> fields = BeanParser.searchFields(project,
-					qualifiedName, property, false, -1, true);
+				Map<String, String> fields = BeanParser.searchFields(project, qualifiedName, property,
+					false, -1, true, null);
 				if (fields.size() == 0)
 				{
 					addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,

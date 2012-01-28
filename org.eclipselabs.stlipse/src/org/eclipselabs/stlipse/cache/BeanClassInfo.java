@@ -35,7 +35,7 @@ public class BeanClassInfo
 		return simpleTypeName;
 	}
 
-	public boolean isMatch(char[] pkg, char[] type)
+	public boolean matches(char[] pkg, char[] type)
 	{
 		if (type.length == 0)
 		{
@@ -63,5 +63,32 @@ public class BeanClassInfo
 	{
 		return "BeanClassInfo [packageName=" + Arrays.toString(packageName) + ", simpleTypeName="
 			+ Arrays.toString(simpleTypeName) + "]";
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(packageName);
+		result = prime * result + Arrays.hashCode(simpleTypeName);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		BeanClassInfo other = (BeanClassInfo)obj;
+		if (!Arrays.equals(packageName, other.packageName))
+			return false;
+		if (!Arrays.equals(simpleTypeName, other.simpleTypeName))
+			return false;
+		return true;
 	}
 }

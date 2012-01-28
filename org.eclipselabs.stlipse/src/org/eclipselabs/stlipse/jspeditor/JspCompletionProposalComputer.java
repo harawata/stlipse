@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
@@ -42,7 +41,7 @@ import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposa
 import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.ast.BeanParser;
 import org.eclipselabs.stlipse.cache.BeanClassInfo;
-import org.eclipselabs.stlipse.cache.StlipseCache;
+import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.eclipselabs.stlipse.util.ClassNameUtil;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -146,8 +145,8 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 						IResource resource = getResource(contentAssistRequest);
 						IJavaProject project = getJavaProject(resource);
 						boolean includeReadOnly = "label".equals(getStripesTagSuffix(tagName));
-						Map<String, ITypeBinding> fields = BeanParser.searchFields(project,
-							qualifiedName, matchString, includeReadOnly, -1, false);
+						Map<String, String> fields = BeanParser.searchFields(project, qualifiedName,
+							matchString, includeReadOnly, -1, false, null);
 						List<ICompletionProposal> proposals = BeanParser.buildFieldNameProposal(
 							fields, matchString, start, length);
 						for (ICompletionProposal proposal : proposals)
@@ -166,12 +165,12 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 	{
 		final List<ICompletionProposal> proposalList = new ArrayList<ICompletionProposal>();
 		final IResource resource = getResource(contentAssistRequest);
-		final List<BeanClassInfo> beanClassList = StlipseCache.getBeanClassInfo(getJavaProject(resource));
+		final List<BeanClassInfo> beanClassList = BeanClassCache.getBeanClassInfo(getJavaProject(resource));
 		final String packageName = ClassNameUtil.getPackage(input);
 		final String typeName = ClassNameUtil.getTypeName(input);
 		for (BeanClassInfo beanClass : beanClassList)
 		{
-			if (beanClass.isMatch(packageName.toCharArray(), typeName.toCharArray()))
+			if (beanClass.matches(packageName.toCharArray(), typeName.toCharArray()))
 			{
 				StringBuilder replacementString = new StringBuilder();
 				replacementString.append(beanClass.getPackageName())

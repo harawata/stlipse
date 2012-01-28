@@ -21,7 +21,6 @@ import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
 import org.eclipse.jdt.ui.text.java.JavaContentAssistInvocationContext;
@@ -62,15 +61,17 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 						if (element.getElementType() == IJavaElement.TYPE)
 						{
 							// search @StrictBinding
-							int replacementLength = getAllowDenyValueLength(offset,
-								(IAnnotatable)element);
+							int replacementLength = getAllowDenyValueLength(offset, (IAnnotatable)element);
 							if (replacementLength > -1)
 							{
 								String input = String.valueOf(coreContext.getToken());
-								Map<String, ITypeBinding> fields = BeanParser.searchFields(
-									javaContext.getProject(), unit, input, false, -1, false);
-								proposals.addAll(BeanParser.buildFieldNameProposal(fields,
-									input, coreContext.getTokenStart() + 1, replacementLength));
+								Map<String, String> fields = BeanParser.searchFields(javaContext.getProject(),
+									unit.getType(element.getParent().getElementName()).getFullyQualifiedName(),
+									input,
+									false,
+									-1, false, unit);
+								proposals.addAll(BeanParser.buildFieldNameProposal(fields, input,
+									coreContext.getTokenStart() + 1, replacementLength));
 							}
 						}
 						else
@@ -79,18 +80,17 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 							StringBuilder matchStr = resolveBeanPropertyName(element);
 							if (matchStr.length() > 0)
 							{
-								int replacementLength = getFieldValueLength(offset,
-									(IAnnotatable)element);
+								int replacementLength = getFieldValueLength(offset, (IAnnotatable)element);
 								if (replacementLength > -1)
 								{
 									char[] token = coreContext.getToken();
 									matchStr.append('.').append(token);
-									Map<String, ITypeBinding> fields = BeanParser.searchFields(
-										javaContext.getProject(), unit, matchStr.toString(),
-										false, -1, false);
+									Map<String, String> fields = BeanParser.searchFields(
+										javaContext.getProject(),
+										unit.getType(element.getParent().getElementName())
+											.getFullyQualifiedName(), matchStr.toString(), false, -1, false, unit);
 									proposals.addAll(BeanParser.buildFieldNameProposal(fields,
-										String.valueOf(token), coreContext.getTokenStart() + 1,
-										replacementLength));
+										String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
 								}
 							}
 						}
@@ -105,8 +105,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		return proposals;
 	}
 
-	private StringBuilder resolveBeanPropertyName(IJavaElement element)
-		throws JavaModelException
+	private StringBuilder resolveBeanPropertyName(IJavaElement element) throws JavaModelException
 	{
 		StringBuilder result = new StringBuilder();
 		int elementType = element.getElementType();
@@ -133,8 +132,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		IAnnotation[] annotations = annotatable.getAnnotations();
 		for (IAnnotation annotation : annotations)
 		{
-			int len = getAnnotationValueLength(offset, annotation, "StrictBinding", "allow",
-				"deny");
+			int len = getAnnotationValueLength(offset, annotation, "StrictBinding", "allow", "deny");
 			if (len > -1)
 				return len;
 		}
@@ -160,8 +158,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 						Object[] items = (Object[])valuePair.getValue();
 						for (Object item : items)
 						{
-							int len = getAnnotationValueLength(offset, (IAnnotation)item,
-								"Validate", "field");
+							int len = getAnnotationValueLength(offset, (IAnnotation)item, "Validate", "field");
 							if (len > -1)
 								return len;
 						}
@@ -176,8 +173,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		String annotationName, String... annotationAttributeNames) throws JavaModelException
 	{
 		ISourceRange sourceRange = annotation.getSourceRange();
-		if (annotationName.equals(annotation.getElementName())
-			&& isInRange(sourceRange, offset))
+		if (annotationName.equals(annotation.getElementName()) && isInRange(sourceRange, offset))
 		{
 			int annotationOffset = sourceRange.getOffset();
 			String source = annotation.getSource();

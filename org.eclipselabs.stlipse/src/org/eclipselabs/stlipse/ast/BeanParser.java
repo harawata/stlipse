@@ -6,12 +6,13 @@
 package org.eclipselabs.stlipse.ast;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
@@ -21,102 +22,150 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipselabs.stlipse.Activator;
+import org.eclipselabs.stlipse.cache.BeanPropertyInfo;
 
 /**
  * @author Iwao AVE!
  */
 public class BeanParser
 {
-	public static Map<String, ITypeBinding> searchFields(IJavaProject project,
-		String qualifiedName, String matchStr, boolean includeReadOnly, int currentIdx,
-		boolean isValidation)
+	private static final Map<IProject, Map<String, BeanPropertyInfo>> beanPropertyCache = new ConcurrentHashMap<IProject, Map<String, BeanPropertyInfo>>();
+
+	public static void clearBeanPropertyCache(IProject project, String qualifiedName)
 	{
-		try
+		Map<String, BeanPropertyInfo> beans = beanPropertyCache.get(project);
+		if (beans != null)
 		{
-			IType type = project.findType(qualifiedName);
-			if (type != null)
-			{
-				ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
-				return searchFields(project, unit, matchStr, includeReadOnly, currentIdx, isValidation);
-			}
+			beans.remove(qualifiedName);
 		}
-		catch (JavaModelException e)
-		{
-			Activator.log(Status.ERROR, "Failed to find type " + qualifiedName, e);
-		}
-		return Collections.emptyMap();
 	}
 
-	public static Map<String, ITypeBinding> searchFields(IJavaProject project,
-		ICompilationUnit unit, String matchStr, boolean includeReadOnly, int currentIdx,
-		boolean isValidation)
+	public static BeanPropertyInfo getBeanPropertyInfo(IJavaProject project, String qualifiedName)
 	{
+		return getBeanPropertyInfo(project, qualifiedName, null);
+	}
+
+	public static BeanPropertyInfo getBeanPropertyInfo(IJavaProject project,
+		String qualifiedName, ICompilationUnit compilationUnit)
+	{
+		Map<String, BeanPropertyInfo> beans = beanPropertyCache.get(project.getProject());
+		BeanPropertyInfo beanProps = null;
+		if (beans == null)
+		{
+			beans = new ConcurrentHashMap<String, BeanPropertyInfo>();
+			beanPropertyCache.put(project.getProject(), beans);
+		}
+		else
+		{
+			beanProps = beans.get(qualifiedName);
+			if (beanProps != null)
+			{
+				return beanProps;
+			}
+		}
+
+		if (compilationUnit == null)
+		{
+			try
+			{
+				final IType type = project.findType(qualifiedName);
+				if (type != null)
+				{
+					compilationUnit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
+				}
+			}
+			catch (JavaModelException e)
+			{
+				Activator.log(Status.ERROR, "Failed to find type " + qualifiedName, e);
+			}
+		}
+
+		if (compilationUnit != null)
+		{
+			Map<String, String> readableFields = new LinkedHashMap<String, String>();
+			Map<String, String> writableFields = new LinkedHashMap<String, String>();
+
+			ASTParser parser = ASTParser.newParser(AST.JLS4);
+			parser.setKind(ASTParser.K_COMPILATION_UNIT);
+			parser.setSource(compilationUnit);
+			parser.setResolveBindings(true);
+			CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
+			astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields));
+
+			beanProps = new BeanPropertyInfo(readableFields, writableFields);
+			beans.put(qualifiedName, beanProps);
+
+			return beanProps;
+		}
+		return null;
+	}
+
+	public static Map<String, String> searchFields(IJavaProject project, String qualifiedName,
+		String matchStr, boolean includeReadOnly, int currentIdx, boolean isValidation,
+		ICompilationUnit unit)
+	{
+		final Map<String, String> results = new LinkedHashMap<String, String>();
 		String searchStr;
-		int startIdx = currentIdx + 1;
-		int dotIdx = getDotIndex(matchStr, startIdx);
+		final int startIdx = currentIdx + 1;
+		final int dotIdx = getDotIndex(matchStr, startIdx);
 		if (dotIdx == -1)
 			searchStr = matchStr.substring(startIdx);
 		else
 			searchStr = matchStr.substring(startIdx, dotIdx);
+		final int bracePos = searchStr.indexOf("[");
+		searchStr = bracePos > -1 ? searchStr.substring(0, bracePos) : searchStr;
+		final boolean isPrefixMatch = !isValidation && dotIdx == -1;
 
-		Map<String, ITypeBinding> fieldMap = new LinkedHashMap<String, ITypeBinding>();
-		try
+		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, unit);
+		if (beanProperty != null)
 		{
-			if (unit != null && unit.isStructureKnown())
+			final Map<String, String> fields = includeReadOnly ? beanProperty.getReadableFields()
+				: beanProperty.getWritableFields();
+
+			for (Entry<String, String> entry : fields.entrySet())
 			{
-				ASTParser parser = ASTParser.newParser(AST.JLS4);
-				parser.setKind(ASTParser.K_COMPILATION_UNIT);
-				parser.setSource(unit);
-				parser.setResolveBindings(true);
-				CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-				astUnit.accept(new BeanPropertyVisitor(project, fieldMap, searchStr,
-					!isValidation && dotIdx == -1, includeReadOnly));
-				if (dotIdx > -1 && fieldMap.size() > 0)
+				final String fieldName = entry.getKey();
+				final String fieldQualifiedName = entry.getValue();
+
+				if (matched(fieldName, searchStr, isPrefixMatch))
 				{
-					ITypeBinding binding = fieldMap.values().iterator().next();
-					if (binding.isParameterizedType())
+					if (dotIdx > -1)
 					{
-						ITypeBinding[] arguments = binding.getTypeArguments();
-						return searchFields(project, arguments[0].getQualifiedName(), matchStr,
-							includeReadOnly, dotIdx, isValidation);
+						return searchFields(project, fieldQualifiedName, matchStr, includeReadOnly, dotIdx,
+							isValidation, null);
 					}
 					else
-						return searchFields(project, binding.getQualifiedName(), matchStr,
-							includeReadOnly, dotIdx, isValidation);
+					{
+						results.put(fieldName, fieldQualifiedName);
+					}
 				}
 			}
 		}
-		catch (JavaModelException e)
-		{
-			Activator.log(Status.ERROR, "Error while parsing " + unit.getElementName(), e);
-		}
-		return fieldMap;
+		return results;
 	}
 
-	public static List<ICompletionProposal> buildFieldNameProposal(
-		Map<String, ITypeBinding> fields, final String input, final int offset,
-		final int replacementLength)
+	public static List<ICompletionProposal> buildFieldNameProposal(Map<String, String> fields,
+		final String input, final int offset, final int replacementLength)
 	{
+		List<ICompletionProposal> proposalList = new ArrayList<ICompletionProposal>();
 		int lastDot = input.lastIndexOf(".");
 		String prefix = lastDot > -1 ? input.substring(0, lastDot) : "";
-		List<ICompletionProposal> proposalList = new ArrayList<ICompletionProposal>();
 		int relevance = fields.size();
-		for (Entry<String, ITypeBinding> fieldEntry : fields.entrySet())
+		for (Entry<String, String> fieldEntry : fields.entrySet())
 		{
 			String fieldName = fieldEntry.getKey();
-			ITypeBinding fieldType = fieldEntry.getValue();
+			String qualifiedName = fieldEntry.getValue();
 			StringBuilder replaceStr = new StringBuilder();
 			if (lastDot > -1)
 				replaceStr.append(prefix).append('.');
 			replaceStr.append(fieldName);
 			StringBuilder displayStr = new StringBuilder();
-			displayStr.append(fieldName).append(" - ").append(fieldType.getQualifiedName());
-			ICompletionProposal proposal = new JavaCompletionProposal(replaceStr.toString(),
-				offset, replacementLength, replaceStr.length(), Activator.getIcon(),
-				displayStr.toString(), null, null, relevance--);
+			displayStr.append(fieldName).append(" - ").append(qualifiedName);
+			ICompletionProposal proposal = new JavaCompletionProposal(replaceStr.toString(), offset,
+				replacementLength, replaceStr.length(), Activator.getIcon(), displayStr.toString(),
+				null, null, relevance--);
 			proposalList.add(proposal);
 		}
 		return proposalList;
@@ -137,4 +186,12 @@ public class BeanParser
 		}
 		return -1;
 	}
+
+	private static boolean matched(String fieldName, String searchStr, boolean prefixMatch)
+	{
+		return (searchStr == null || searchStr.length() == 0)
+			|| (prefixMatch ? fieldName.toLowerCase().startsWith(searchStr.toLowerCase())
+				: fieldName.equals(searchStr));
+	}
+
 }

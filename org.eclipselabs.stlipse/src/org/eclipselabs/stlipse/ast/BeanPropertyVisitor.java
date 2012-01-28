@@ -34,46 +34,37 @@ public class BeanPropertyVisitor extends ASTVisitor
 {
 	private IJavaProject project;
 
-	private String searchStr;
+	private final Map<String, String> readableFields;
 
-	private boolean prefixMatch;
-
-	private boolean includeReadOnly;
-
-	private Map<String, ITypeBinding> fields;
+	private final Map<String, String> writableFields;
 
 	public BeanPropertyVisitor(
 		IJavaProject project,
-		Map<String, ITypeBinding> fields,
-		String searchStr,
-		boolean prefixMatch,
-		boolean includeReadOnly)
+		Map<String, String> readableFields,
+		Map<String, String> writableFields)
 	{
 		super();
 		this.project = project;
-		this.fields = fields;
-		int bracePos = searchStr.indexOf("[");
-		this.searchStr = bracePos > -1 ? searchStr.substring(0, bracePos) : searchStr;
-		this.prefixMatch = prefixMatch;
-		this.includeReadOnly = includeReadOnly;
+		this.readableFields = readableFields;
+		this.writableFields = writableFields;
 	}
 
 	@Override
 	public boolean visit(FieldDeclaration node)
 	{
 		int modifiers = node.getModifiers();
-		if (Modifier.isPublic(modifiers) && (includeReadOnly || !Modifier.isFinal(modifiers)))
+		if (Modifier.isPublic(modifiers))
 		{
-			// public field
 			@SuppressWarnings("unchecked")
 			List<VariableDeclarationFragment> fragments = node.fragments();
 			for (VariableDeclarationFragment fragment : fragments)
 			{
 				String fieldName = fragment.getName().toString();
-				if (matched(fieldName))
-				{
-					addType(fields, fieldName, node.getType());
-				}
+				String qualifiedName = getQualifiedNameFromType(node.getType());
+				if (Modifier.isFinal(modifiers))
+					readableFields.put(fieldName, qualifiedName);
+				else
+					writableFields.put(fieldName, qualifiedName);
 			}
 		}
 		return false;
@@ -85,26 +76,39 @@ public class BeanPropertyVisitor extends ASTVisitor
 		if (Modifier.isPublic(node.getModifiers()))
 		{
 			String methodName = node.getName().toString();
-			if (includeReadOnly && isGetter(node))
+			String fieldName = getFieldNameFromAccessor(methodName);
+			String qualifiedName = null;
+			if (isGetter(node))
 			{
-				String fieldName = getFieldNameFromAccessor(methodName);
-				if (matched(fieldName))
-				{
-					addType(fields, fieldName, node.getReturnType2());
-				}
+				qualifiedName = getQualifiedNameFromType(node.getReturnType2());
+				readableFields.put(fieldName, qualifiedName);
 			}
 			else if (isSetter(node))
 			{
-				String fieldName = getFieldNameFromAccessor(methodName);
-				if (matched(fieldName))
-				{
-					SingleVariableDeclaration param = (SingleVariableDeclaration)node.parameters()
-						.get(0);
-					addType(fields, fieldName, param.getType());
-				}
+				SingleVariableDeclaration param = (SingleVariableDeclaration)node.parameters().get(0);
+				qualifiedName = getQualifiedNameFromType(param.getType());
+				writableFields.put(fieldName, qualifiedName);
 			}
 		}
 		return false;
+	}
+
+	private String getQualifiedNameFromType(Type type)
+	{
+		String qualifiedName = null;
+		ITypeBinding binding = type.resolveBinding();
+		if (binding.isParameterizedType())
+		{
+			ITypeBinding[] arguments = binding.getTypeArguments();
+			// Assuming collection.
+			// TODO: map?
+			qualifiedName = arguments[0].getQualifiedName();
+		}
+		else
+		{
+			qualifiedName = binding.getQualifiedName();
+		}
+		return qualifiedName;
 	}
 
 	private boolean isGetter(MethodDeclaration node)
@@ -131,59 +135,39 @@ public class BeanPropertyVisitor extends ASTVisitor
 	@Override
 	public void endVisit(TypeDeclaration node)
 	{
-		// Avoid useless scan.
-		if (prefixMatch || fields.size() == 0)
+		try
 		{
-			try
+			Type superclassType = node.getSuperclassType();
+			if (superclassType != null)
 			{
-				Type superclassType = node.getSuperclassType();
-				if (superclassType != null)
+				ITypeBinding binding = superclassType.resolveBinding();
+				IType type = project.findType(binding.getQualifiedName());
+				ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
+				if (unit != null && unit.isStructureKnown())
 				{
-					ITypeBinding binding = superclassType.resolveBinding();
-					IType type;
-					type = project.findType(binding.getQualifiedName());
-					ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
-					if (unit != null && unit.isStructureKnown())
-					{
-						ASTParser parser = ASTParser.newParser(AST.JLS4);
-						parser.setKind(ASTParser.K_COMPILATION_UNIT);
-						parser.setSource(unit);
-						parser.setResolveBindings(true);
-						CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-						astUnit.accept(new BeanPropertyVisitor(project, fields, searchStr,
-							prefixMatch, includeReadOnly));
-					}
+					ASTParser parser = ASTParser.newParser(AST.JLS4);
+					parser.setKind(ASTParser.K_COMPILATION_UNIT);
+					parser.setSource(unit);
+					parser.setResolveBindings(true);
+					CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
+					astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields));
 				}
 			}
-			catch (JavaModelException e)
-			{
-				e.printStackTrace();
-			}
+		}
+		catch (JavaModelException e)
+		{
+			e.printStackTrace();
 		}
 	}
 
 	public static String getFieldNameFromAccessor(String methodName)
 	{
+		if (methodName == null || methodName.length() < 4)
+			return "";
 		StringBuilder sb = new StringBuilder();
 		sb.append(Character.toLowerCase(methodName.charAt(3)));
 		if (methodName.length() > 4)
 			sb.append(methodName.substring(4));
 		return sb.toString();
-	}
-
-	private boolean matched(String fieldName)
-	{
-		return (searchStr == null || searchStr.length() == 0)
-			|| (prefixMatch ? fieldName.toLowerCase().startsWith(searchStr.toLowerCase())
-				: fieldName.equals(searchStr));
-	}
-
-	private void addType(Map<String, ITypeBinding> fields, String name, Type type)
-	{
-		if (!fields.containsKey(name))
-		{
-			ITypeBinding binding = type.resolveBinding();
-			fields.put(name, binding);
-		}
 	}
 }

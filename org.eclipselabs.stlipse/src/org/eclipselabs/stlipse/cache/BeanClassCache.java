@@ -6,12 +6,12 @@
 package org.eclipselabs.stlipse.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.emf.common.util.EList;
@@ -32,7 +32,7 @@ import org.eclipselabs.stlipse.Activator;
 /**
  * @author Iwao AVE!
  */
-public class StlipseCache
+public class BeanClassCache
 {
 	private static final Map<IProject, List<BeanClassInfo>> beanClassCache = new ConcurrentHashMap<IProject, List<BeanClassInfo>>();
 
@@ -45,14 +45,36 @@ public class StlipseCache
 		return beanClassList;
 	}
 
-	public static void clearBeanClassCache(IResource resource)
+	public static void clearBeanClassCache(IProject project)
 	{
-		beanClassCache.remove(resource.getProject());
+		beanClassCache.remove(project);
+	}
+
+	public static void add(IProject project, String packageName, String simpleTypeName)
+	{
+		List<BeanClassInfo> beanClassList = beanClassCache.get(project);
+		if (beanClassList != null)
+		{
+			BeanClassInfo beanClassInfo = new BeanClassInfo(packageName.toCharArray(),
+				simpleTypeName.toCharArray());
+			beanClassList.remove(beanClassInfo);
+			beanClassList.add(0, beanClassInfo);
+		}
+	}
+
+	public static void remove(IProject project, String packageName, String simpleTypeName)
+	{
+		List<BeanClassInfo> beanClassList = beanClassCache.get(project);
+		if (beanClassList != null)
+		{
+			beanClassList.remove(new BeanClassInfo(packageName.toCharArray(),
+				simpleTypeName.toCharArray()));
+		}
 	}
 
 	private static List<BeanClassInfo> buildBeanClassCache(IJavaProject project)
 	{
-		final List<BeanClassInfo> beanClassList = new ArrayList<BeanClassInfo>();
+		final List<BeanClassInfo> beanClassList = Collections.synchronizedList(new ArrayList<BeanClassInfo>());
 		beanClassCache.put(project.getProject(), beanClassList);
 
 		final List<String> packageList = getActionResolverPackages(project.getProject());

@@ -5,14 +5,24 @@
 
 package org.eclipselabs.stlipse;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipselabs.stlipse.cache.StlipseCache;
+import org.eclipse.jdt.core.Flags;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipselabs.stlipse.ast.BeanParser;
+import org.eclipselabs.stlipse.cache.BeanClassCache;
 
 /**
  * @author Iwao AVE!
@@ -32,13 +42,74 @@ public class ResourceChangeListener implements IResourceChangeListener
 			public boolean visit(IResourceDelta delta) throws CoreException
 			{
 				IResource resource = delta.getResource();
-				if (resource.getType() == IResource.FILE
-					&& ("web.xml".equals(resource.getName()) || "java".equalsIgnoreCase(resource.getFileExtension())))
+				if (resource.getType() == IResource.FILE)
 				{
-					StlipseCache.clearBeanClassCache(resource);
+					int flags = delta.getFlags();
+					int kind = delta.getKind();
+					IProject project = resource.getProject();
+
+					if (isWebXml(resource))
+					{
+						BeanClassCache.clearBeanClassCache(project);
+					}
+					else if ("java".equals(resource.getFileExtension()))
+					{
+						final IFile file = (IFile)resource;
+						final ICompilationUnit compilationUnit = (ICompilationUnit)JavaCore.create(file);
+						final String simpleTypeName = compilationUnit.getElementName();
+						final IType type = compilationUnit.getType(simpleTypeName.substring(0,
+							simpleTypeName.length() - 5));
+						final String packageName = type.getPackageFragment().getElementName();
+
+						switch (kind)
+						{
+							case IResourceDelta.ADDED:
+								if (isActionBean(compilationUnit, type))
+									BeanClassCache.add(project, packageName, simpleTypeName);
+								break;
+							case IResourceDelta.REMOVED:
+								if (isActionBean(compilationUnit, type))
+									BeanClassCache.remove(project, packageName, simpleTypeName);
+								break;
+							case IResourceDelta.CHANGED:
+								if ((flags & IResourceDelta.CONTENT) != 0
+									|| (flags & IResourceDelta.MOVED_TO) != 0
+									|| flags == IResourceDelta.NO_CHANGE)
+								{
+									if (isActionBean(compilationUnit, type))
+										BeanClassCache.add(project, packageName, simpleTypeName);
+									// Remove bean property cache.
+									String qualifiedName = type.getFullyQualifiedName();
+									BeanParser.clearBeanPropertyCache(project, qualifiedName);
+								}
+								break;
+							default:
+								break;
+						}
+					}
 					return false;
 				}
 				return true;
+			}
+
+			private boolean isWebXml(IResource resource)
+			{
+				return "web.xml".equals(resource.getName());
+			}
+
+			private boolean isActionBean(final ICompilationUnit compilationUnit, final IType type)
+				throws JavaModelException
+			{
+				int typeFlags = type.getFlags();
+				if (Flags.isPublic(typeFlags) && !Flags.isAbstract(typeFlags)
+					&& !Flags.isInterface(typeFlags))
+				{
+					final ITypeHierarchy supertypes = type.newSupertypeHierarchy(new NullProgressMonitor());
+					final IType actionBean = compilationUnit.getJavaProject().findType(
+						"net.sourceforge.stripes.action.ActionBean");
+					return supertypes.contains(actionBean);
+				}
+				return false;
 			}
 		};
 
