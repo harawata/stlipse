@@ -135,9 +135,14 @@ public class JspValidator extends AbstractValidator implements IValidator
 			{
 				validateBeanclass(project, file, doc, attr);
 			}
-			else if (isValidatable(tagName, attributeName))
+			else if (StripesTagUtil.isSuggestableFormTag(tagName, attributeName)
+				&& !"label".equals(StripesTagUtil.getStripesTagSuffix(tagName)))
 			{
-				validateActionBeanProperty(project, file, doc, element, attr);
+				validateFormTag(project, file, doc, element, attr);
+			}
+			else if (StripesTagUtil.isParamTag(tagName, attributeName))
+			{
+				validateParamTag(project, file, doc, element, attr);
 			}
 		}
 
@@ -152,36 +157,42 @@ public class JspValidator extends AbstractValidator implements IValidator
 		}
 	}
 
-	private boolean isValidatable(String tagName, String attributeName)
-	{
-		String tagSuffix = JspCompletionProposalComputer.getStripesTagSuffix(tagName);
-		return JspCompletionProposalComputer.isSuggestableTag(tagSuffix)
-			&& !"label".equals(tagSuffix)
-			&& JspCompletionProposalComputer.isActionBeanProperty(tagName, attributeName);
-	}
-
-	private void validateActionBeanProperty(IJavaProject project, IFile file,
-		IStructuredDocument doc, IDOMElement element, IDOMAttr attr)
+	private void validateParamTag(IJavaProject project, IFile file, IStructuredDocument doc,
+		IDOMElement element, IDOMAttr attr)
 	{
 		String property = attr.getValue().trim();
 		if (containsElExpression(property))
 			return;
 
-		Node formElement = JspCompletionProposalComputer.getFormElement(element);
-		if (formElement != null)
+		String beanclass = StripesTagUtil.getParentBeanclass(element, "url", "link");
+		if (beanclass != null)
 		{
-			NamedNodeMap attributes = formElement.getAttributes();
-			Node beanclassAttribute = attributes.getNamedItem("beanclass");
-			if (beanclassAttribute != null)
+			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass, property,
+				false, -1, true, null);
+			if (fields.size() == 0)
 			{
-				String qualifiedName = beanclassAttribute.getNodeValue();
-				Map<String, String> fields = BeanPropertyCache.searchFields(project, qualifiedName, property,
-					false, -1, true, null);
-				if (fields.size() == 0)
-				{
-					addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
-						IMarker.PRIORITY_NORMAL, "No writable property found.");
-				}
+				addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
+					IMarker.PRIORITY_NORMAL, "No writable property found.");
+			}
+		}
+	}
+
+	private void validateFormTag(IJavaProject project, IFile file, IStructuredDocument doc,
+		IDOMElement element, IDOMAttr attr)
+	{
+		String property = attr.getValue().trim();
+		if (containsElExpression(property))
+			return;
+
+		String beanclass = StripesTagUtil.getParentBeanclass(element, "form");
+		if (beanclass != null)
+		{
+			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
+				property, false, -1, true, null);
+			if (fields.size() == 0)
+			{
+				addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
+					IMarker.PRIORITY_NORMAL, "No writable property found.");
 			}
 		}
 	}

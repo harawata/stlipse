@@ -56,9 +56,9 @@ public class ResourceChangeListener implements IResourceChangeListener
 					{
 						final IFile file = (IFile)resource;
 						final ICompilationUnit compilationUnit = (ICompilationUnit)JavaCore.create(file);
-						final String simpleTypeName = compilationUnit.getElementName();
-						final IType type = compilationUnit.getType(simpleTypeName.substring(0,
-							simpleTypeName.length() - 5));
+						final String elementName = compilationUnit.getElementName();
+						final String simpleTypeName = elementName.substring(0, elementName.length() - 5);
+						final IType type = compilationUnit.getType(simpleTypeName);
 						final String packageName = type.getPackageFragment().getElementName();
 
 						switch (kind)

@@ -6,7 +6,6 @@
 package org.eclipselabs.stlipse.cache;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +73,7 @@ public class BeanClassCache
 
 	private static List<BeanClassInfo> buildBeanClassCache(IJavaProject project)
 	{
-		final List<BeanClassInfo> beanClassList = Collections.synchronizedList(new ArrayList<BeanClassInfo>());
+		final List<BeanClassInfo> beanClassList = new ArrayList<BeanClassInfo>();
 		projectCache.put(project.getProject(), beanClassList);
 
 		final List<String> packageList = getActionResolverPackages(project.getProject());

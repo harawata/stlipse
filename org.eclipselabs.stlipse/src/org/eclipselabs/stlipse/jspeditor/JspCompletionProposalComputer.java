@@ -6,11 +6,8 @@
 package org.eclipselabs.stlipse.jspeditor;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -19,10 +16,8 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -43,8 +38,6 @@ import org.eclipselabs.stlipse.cache.BeanClassCache;
 import org.eclipselabs.stlipse.cache.BeanClassInfo;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.eclipselabs.stlipse.util.ClassNameUtil;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
 
 /**
  * The super class {@link AbstractXMLCompletionProposalComputer} will be available to API.
@@ -102,14 +95,12 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 				&& contentAssistRequest.getMatchString().length() > 0)
 			{
 				// Value is surrounded by (double) quotes.
-				matchString = currentValue.substring(1, contentAssistRequest.getMatchString()
-					.length());
+				matchString = currentValue.substring(1, contentAssistRequest.getMatchString().length());
 				start++;
 				length = currentValue.length() - 2;
 			}
 			else
-				matchString = currentValue.substring(0, contentAssistRequest.getMatchString()
-					.length());
+				matchString = currentValue.substring(0, contentAssistRequest.getMatchString().length());
 
 			if ("beanclass".equalsIgnoreCase(attributeName))
 			{
@@ -123,36 +114,42 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 					}
 				}
 			}
-			else if (isActionBeanProperty(tagName, attributeName))
+			else if (StripesTagUtil.isSuggestableFormTag(tagName, attributeName))
 			{
-				Node parentNode = getFormElement(node);
-				if (parentNode == null)
+				String beanclass = StripesTagUtil.getParentBeanclass(node, "form");
+				if (beanclass != null)
 				{
-					Activator.log(Status.WARNING, "Stripes form tag was not found.");
-				}
-				else
-				{
-					NamedNodeMap attributes = parentNode.getAttributes();
-					Node beanclassAttribute = attributes.getNamedItem("beanclass");
-					if (beanclassAttribute == null)
+					IResource resource = getResource(contentAssistRequest);
+					IJavaProject project = getJavaProject(resource);
+					boolean includeReadOnly = "label".equals(StripesTagUtil.getStripesTagSuffix(tagName));
+					Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
+						matchString,
+						includeReadOnly, -1, false, null);
+					List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
+						fields,
+						matchString, start, length);
+					for (ICompletionProposal proposal : proposals)
 					{
-						Activator.log(Status.WARNING,
-							"Stripes form tag does not have a 'beanclass' attribute.");
+						contentAssistRequest.addProposal(proposal);
 					}
-					else
+				}
+			}
+			else if (StripesTagUtil.isParamTag(tagName, attributeName))
+			{
+				String beanclass = StripesTagUtil.getParentBeanclass(node, "url", "link");
+				if (beanclass != null)
+				{
+					IResource resource = getResource(contentAssistRequest);
+					IJavaProject project = getJavaProject(resource);
+					Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
+						matchString,
+						false, -1, false, null);
+					List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
+						fields,
+						matchString, start, length);
+					for (ICompletionProposal proposal : proposals)
 					{
-						String qualifiedName = beanclassAttribute.getNodeValue();
-						IResource resource = getResource(contentAssistRequest);
-						IJavaProject project = getJavaProject(resource);
-						boolean includeReadOnly = "label".equals(getStripesTagSuffix(tagName));
-						Map<String, String> fields = BeanPropertyCache.searchFields(project, qualifiedName,
-							matchString, includeReadOnly, -1, false, null);
-						List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
-							fields, matchString, start, length);
-						for (ICompletionProposal proposal : proposals)
-						{
 							contentAssistRequest.addProposal(proposal);
-						}
 					}
 				}
 			}
@@ -214,8 +211,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 				IStructuredModel model = null;
 				try
 				{
-					model = StructuredModelManager.getModelManager().getExistingModelForRead(
-						document);
+					model = StructuredModelManager.getModelManager().getExistingModelForRead(document);
 					if (model != null)
 					{
 						baselocation = model.getBaseLocation();
@@ -247,76 +243,10 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 		return resource;
 	}
 
-	public static Node getFormElement(Node node)
-	{
-		Node parentNode = node.getParentNode();
-		while (parentNode != null && !isFormTag(parentNode.getNodeName()))
-		{
-			parentNode = parentNode.getParentNode();
-		}
-		return parentNode;
-	}
-
-	private static boolean isFormTag(String tagName)
-	{
-		String suffix = getStripesTagSuffix(tagName);
-		return "form".equals(suffix);
-	}
-
 	private boolean isProposalsAvailable(String tagName, String attributeName)
 	{
-		if ("beanclass".equalsIgnoreCase(attributeName))
-		{
-			return true;
-		}
-		return isActionBeanProperty(tagName, attributeName);
-	}
-
-	public static boolean isActionBeanProperty(String tagName, String attributeName)
-	{
-		String suffix = getStripesTagSuffix(tagName);
-		return isSuggestableAttribute(attributeName) && isSuggestableTag(suffix);
-	}
-
-	private static boolean isSuggestableAttribute(String attribute)
-	{
-		return "name".equalsIgnoreCase(attribute) || "for".equalsIgnoreCase(attribute);
-	}
-
-	public static boolean isSuggestableTag(String tag)
-	{
-		final List<String> tags = Arrays.asList("checkbox", "file", "hidden", "label",
-			"password", "radio", "select", "text", "textarea");
-		return tags.contains(tag);
-	}
-
-	public static String getStripesTagSuffix(String tagName)
-	{
-		final String prefix = getStripesTagPrefix(tagName);
-		if (prefix != null && prefix.length() + 1 < tagName.length())
-			return tagName.substring(prefix.length() + 1);
-		return null;
-	}
-
-	private static String getStripesTagPrefix(String tagName)
-	{
-		Set<String> prefixes = getPrefixesFromPreference();
-		int prefixLength = tagName.indexOf(':');
-		if (prefixLength > 0)
-		{
-			String prefix = tagName.substring(0, prefixLength);
-			if (prefixes.contains(prefix))
-				return prefix;
-		}
-		return null;
-	}
-
-	private static Set<String> getPrefixesFromPreference()
-	{
-		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		List<String> list = Arrays.asList(store.getString("tagPrefixes").split(" *, *"));
-		Set<String> result = new HashSet<String>();
-		result.addAll(list);
-		return result;
+		return "beanclass".equalsIgnoreCase(attributeName)
+			|| StripesTagUtil.isSuggestableFormTag(tagName, attributeName)
+			|| StripesTagUtil.isParamTag(tagName, attributeName);
 	}
 }
