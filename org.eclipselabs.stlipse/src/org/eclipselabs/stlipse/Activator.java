@@ -11,7 +11,6 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
@@ -101,9 +100,8 @@ public class Activator extends AbstractUIPlugin
 
 	public static void log(Status status)
 	{
-		ILog log = getDefault().getLog();
-		if (log != null)
-			log.log(status);
+		if (getDefault() != null && getDefault().getLog() != null)
+			getDefault().getLog().log(status);
 	}
 
 	public static void log(int severity, String message)
