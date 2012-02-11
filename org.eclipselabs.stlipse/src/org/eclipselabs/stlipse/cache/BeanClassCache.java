@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -17,6 +18,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.jdt.core.Flags;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
 import org.eclipse.jdt.core.search.SearchEngine;
@@ -33,60 +35,66 @@ import org.eclipselabs.stlipse.Activator;
  */
 public class BeanClassCache
 {
-	private static final Map<IProject, List<BeanClassInfo>> projectCache = new ConcurrentHashMap<IProject, List<BeanClassInfo>>();
+	private static final Map<IProject, List<BeanClassInfo>> beanCache = new ConcurrentHashMap<IProject, List<BeanClassInfo>>();
 
 	public static List<BeanClassInfo> getBeanClassInfo(IJavaProject project)
 	{
-		List<BeanClassInfo> beanClassList = projectCache.get(project.getProject());
-		if (beanClassList == null)
-			beanClassList = buildBeanClassCache(project);
-
-		return beanClassList;
+		return getBeanClassCache(project);
 	}
 
-	public static void clearBeanClassCache(IProject project)
+	public static boolean actionBeanExists(IJavaProject project, String beanclass)
 	{
-		projectCache.remove(project);
+		List<BeanClassInfo> beanClassList = getBeanClassCache(project);
+		for (BeanClassInfo beanClassInfo : beanClassList)
+		{
+			if (beanClassInfo.matches(beanclass))
+				return true;
+		}
+		return false;
 	}
 
 	public static void add(IProject project, String packageName, String simpleTypeName)
 	{
-		List<BeanClassInfo> beanClassList = projectCache.get(project);
-		if (beanClassList != null)
-		{
-			BeanClassInfo beanClassInfo = new BeanClassInfo(packageName.toCharArray(),
-				simpleTypeName.toCharArray());
-			beanClassList.remove(beanClassInfo);
-			beanClassList.add(0, beanClassInfo);
-		}
+		List<BeanClassInfo> beanClassList = getBeanClassCache(JavaCore.create(project));
+		BeanClassInfo beanClassInfo = new BeanClassInfo(packageName, simpleTypeName);
+		beanClassList.remove(beanClassInfo);
+		beanClassList.add(0, beanClassInfo);
 	}
 
 	public static void remove(IProject project, String packageName, String simpleTypeName)
 	{
-		List<BeanClassInfo> beanClassList = projectCache.get(project);
+		List<BeanClassInfo> beanClassList = beanCache.get(project);
 		if (beanClassList != null)
-		{
-			beanClassList.remove(new BeanClassInfo(packageName.toCharArray(),
-				simpleTypeName.toCharArray()));
-		}
+			beanClassList.remove(new BeanClassInfo(packageName, simpleTypeName));
 	}
 
-	private static List<BeanClassInfo> buildBeanClassCache(IJavaProject project)
+	public static void clear(IProject project)
 	{
-		final List<BeanClassInfo> beanClassList = new ArrayList<BeanClassInfo>();
-		projectCache.put(project.getProject(), beanClassList);
+		beanCache.remove(project);
+	}
 
-		final List<String> packageList = getActionResolverPackages(project.getProject());
+	private static synchronized List<BeanClassInfo> getBeanClassCache(IJavaProject javaProject)
+	{
+		final IProject project = javaProject.getProject();
+		if (beanCache.containsKey(project))
+			return beanCache.get(project);
+
+		final List<BeanClassInfo> beanClassList = new CopyOnWriteArrayList<BeanClassInfo>();
+		beanCache.put(project, beanClassList);
+
+		final List<String> packageList = getActionResolverPackages(project);
 		if (packageList.size() == 0)
 		{
 			// Returns an empty list if no package root for action beans is defined.
 			return beanClassList;
 		}
 
-		IType actionBeanInterface;
 		try
 		{
-			actionBeanInterface = project.findType("net.sourceforge.stripes.action.ActionBean");
+			IType actionBeanInterface = TypeCache.getActionBean(javaProject);
+			if (actionBeanInterface == null)
+				return beanClassList;
+
 			IJavaSearchScope scope = SearchEngine.createHierarchyScope(actionBeanInterface);
 			TypeNameRequestor requestor = new TypeNameRequestor()
 			{
@@ -129,6 +137,7 @@ public class BeanClassCache
 		{
 			Activator.log(Status.ERROR, "Error occurred while creating proposals.", e);
 		}
+
 		return beanClassList;
 	}
 
@@ -137,9 +146,11 @@ public class BeanClassCache
 		List<String> packageList = new ArrayList<String>();
 		WebArtifactEdit artifactEdit = WebArtifactEdit.getWebArtifactEditForRead(project);
 		WebApp webApp = artifactEdit.getWebApp();
+		@SuppressWarnings("unchecked")
 		EList<Filter> filters = webApp.getFilters();
 		for (Filter filter : filters)
 		{
+			@SuppressWarnings("unchecked")
 			EList<ParamValue> initParamValues = filter.getInitParamValues();
 			for (ParamValue paramValue : initParamValues)
 			{

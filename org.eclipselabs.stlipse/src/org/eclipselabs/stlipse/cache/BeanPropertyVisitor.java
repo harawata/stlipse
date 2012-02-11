@@ -8,6 +8,7 @@ package org.eclipselabs.stlipse.cache;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -18,6 +19,8 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -26,6 +29,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipselabs.stlipse.Activator;
 
 /**
  * @author Iwao AVE!
@@ -38,15 +42,19 @@ public class BeanPropertyVisitor extends ASTVisitor
 
 	private final Map<String, String> writableFields;
 
+	private final Map<String, Boolean> eventHandlers;
+
 	public BeanPropertyVisitor(
 		IJavaProject project,
 		Map<String, String> readableFields,
-		Map<String, String> writableFields)
+		Map<String, String> writableFields,
+		Map<String, Boolean> eventHandlers)
 	{
 		super();
 		this.project = project;
 		this.readableFields = readableFields;
 		this.writableFields = writableFields;
+		this.eventHandlers = eventHandlers;
 	}
 
 	@Override
@@ -61,7 +69,9 @@ public class BeanPropertyVisitor extends ASTVisitor
 			{
 				String fieldName = fragment.getName().toString();
 				String qualifiedName = getQualifiedNameFromType(node.getType());
-				if (Modifier.isFinal(modifiers))
+				if (qualifiedName == null)
+					; // ignore
+				else if (Modifier.isFinal(modifiers))
 					readableFields.put(fieldName, qualifiedName);
 				else
 					writableFields.put(fieldName, qualifiedName);
@@ -73,21 +83,77 @@ public class BeanPropertyVisitor extends ASTVisitor
 	@Override
 	public boolean visit(MethodDeclaration node)
 	{
+		// Perform some quick check before binding resolution.
 		if (Modifier.isPublic(node.getModifiers()))
 		{
-			String methodName = node.getName().toString();
-			String fieldName = getFieldNameFromAccessor(methodName);
-			String qualifiedName = null;
-			if (isGetter(node))
+			final String methodName = node.getName().toString();
+			final int parameterCount = node.parameters().size();
+			final Type returnType = node.getReturnType2();
+			if (returnType == null)
 			{
-				qualifiedName = getQualifiedNameFromType(node.getReturnType2());
-				readableFields.put(fieldName, qualifiedName);
+				// Ignore constructor
 			}
-			else if (isSetter(node))
+			else if (isReturnVoid(returnType))
 			{
-				SingleVariableDeclaration param = (SingleVariableDeclaration)node.parameters().get(0);
-				qualifiedName = getQualifiedNameFromType(param.getType());
-				writableFields.put(fieldName, qualifiedName);
+				if (isSetter(methodName, parameterCount))
+				{
+					SingleVariableDeclaration param = (SingleVariableDeclaration)node.parameters().get(0);
+					String qualifiedName = getQualifiedNameFromType(param.getType());
+					String fieldName = getFieldNameFromAccessor(methodName);
+					writableFields.put(fieldName, qualifiedName);
+				}
+			}
+			else
+			{
+				if (isGetter(methodName, parameterCount))
+				{
+					String fieldName = getFieldNameFromAccessor(methodName);
+					String qualifiedName = getQualifiedNameFromType(returnType);
+					readableFields.put(fieldName, qualifiedName);
+				}
+				else if (isEventHandler(returnType.toString(), parameterCount))
+				{
+					ITypeBinding binding = returnType.resolveBinding();
+					if (binding == null)
+					{
+						Activator.log(Status.INFO,
+							"Couldn't resolve binding for return type " + returnType.toString()
+								+ " of method " + methodName);
+					}
+					else
+					{
+						String qualifiedName = binding.getQualifiedName();
+						try
+						{
+							if (TypeCache.isResolution(project, project.findType(qualifiedName)))
+							{
+								Object annotationValue = null;
+								Boolean isDefaultHandler = Boolean.FALSE;
+								for (IAnnotationBinding annotation : node.resolveBinding().getAnnotations())
+								{
+									isDefaultHandler = "DefaultHandler".equals(annotation.getName());
+									if ("HandlesEvent".equals(annotation.getName()))
+									{
+										IMemberValuePairBinding[] valuePairs = annotation.getAllMemberValuePairs();
+										for (IMemberValuePairBinding valuePair : valuePairs)
+										{
+											if ("value".equals(valuePair.getName()))
+											{
+												annotationValue = valuePair.getValue();
+											}
+										}
+									}
+								}
+								eventHandlers.put((String)(annotationValue == null ? methodName
+									: annotationValue), isDefaultHandler);
+							}
+						}
+						catch (JavaModelException e)
+						{
+							Activator.log(Status.WARNING, "Error occurred during event handler check", e);
+						}
+					}
+				}
 			}
 		}
 		return false;
@@ -97,37 +163,42 @@ public class BeanPropertyVisitor extends ASTVisitor
 	{
 		String qualifiedName = null;
 		ITypeBinding binding = type.resolveBinding();
-		if (binding.isParameterizedType())
+		if (binding != null)
 		{
-			ITypeBinding[] arguments = binding.getTypeArguments();
-			// Assuming collection.
-			// TODO: map?
-			qualifiedName = arguments[0].getQualifiedName();
-		}
-		else
-		{
-			qualifiedName = binding.getQualifiedName();
+			if (binding.isParameterizedType())
+			{
+				ITypeBinding[] arguments = binding.getTypeArguments();
+				// Assuming collection.
+				// TODO: map?
+				qualifiedName = arguments[0].getQualifiedName();
+			}
+			else
+			{
+				qualifiedName = binding.getQualifiedName();
+			}
 		}
 		return qualifiedName;
 	}
 
-	private boolean isGetter(MethodDeclaration node)
+	private boolean isEventHandler(String returnType, int parameterCount)
 	{
-		String methodName = node.getName().toString();
-		return methodName.startsWith("get") && methodName.length() > 3 && !isReturnVoid(node)
-			&& node.parameters().size() == 0;
+		// Just a quick check here.
+		return returnType.endsWith("Resolution") && parameterCount == 0;
 	}
 
-	private boolean isSetter(MethodDeclaration node)
+	private boolean isGetter(String methodName, int parameterCount)
 	{
-		String methodName = node.getName().toString();
-		return methodName.startsWith("set") && methodName.length() > 3 && isReturnVoid(node)
-			&& node.parameters().size() == 1;
+		return (methodName.startsWith("get") && methodName.length() > 3)
+			|| (methodName.startsWith("is") && methodName.length() > 2) && parameterCount == 0;
 	}
 
-	private boolean isReturnVoid(MethodDeclaration node)
+	private boolean isSetter(String methodName, int parameterCount)
 	{
-		Type type = node.getReturnType2();
+		return methodName.startsWith("set") && methodName.length() > 3 && parameterCount == 1;
+	}
+
+	private boolean isReturnVoid(Type type)
+	{
 		return type.isPrimitiveType()
 			&& PrimitiveType.VOID.equals(((PrimitiveType)type).getPrimitiveTypeCode());
 	}
@@ -150,7 +221,8 @@ public class BeanPropertyVisitor extends ASTVisitor
 					parser.setSource(unit);
 					parser.setResolveBindings(true);
 					CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-					astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields));
+					astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields,
+						eventHandlers));
 				}
 			}
 		}
@@ -162,12 +234,25 @@ public class BeanPropertyVisitor extends ASTVisitor
 
 	public static String getFieldNameFromAccessor(String methodName)
 	{
-		if (methodName == null || methodName.length() < 4)
+		if (methodName == null)
 			return "";
 		StringBuilder sb = new StringBuilder();
-		sb.append(Character.toLowerCase(methodName.charAt(3)));
-		if (methodName.length() > 4)
-			sb.append(methodName.substring(4));
+		if (methodName.startsWith("set") || methodName.startsWith("get"))
+		{
+			sb.append(Character.toLowerCase(methodName.charAt(3)));
+			if (methodName.length() > 4)
+				sb.append(methodName.substring(4));
+		}
+		else if (methodName.startsWith("is"))
+		{
+			sb.append(Character.toLowerCase(methodName.charAt(2)));
+			if (methodName.length() > 3)
+				sb.append(methodName.substring(3));
+		}
+		else
+		{
+			// No such accessor.
+		}
 		return sb.toString();
 	}
 }

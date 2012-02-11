@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipselabs.stlipse.cache.BeanClassCache;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
+import org.eclipselabs.stlipse.cache.TypeCache;
 
 /**
  * @author Iwao AVE!
@@ -50,7 +51,7 @@ public class ResourceChangeListener implements IResourceChangeListener
 
 					if (isWebXml(resource))
 					{
-						BeanClassCache.clearBeanClassCache(project);
+						BeanClassCache.clear(project);
 					}
 					else if ("java".equals(resource.getFileExtension()))
 					{
@@ -68,19 +69,27 @@ public class ResourceChangeListener implements IResourceChangeListener
 									BeanClassCache.add(project, packageName, simpleTypeName);
 								break;
 							case IResourceDelta.REMOVED:
-								if (isActionBean(compilationUnit, type))
-									BeanClassCache.remove(project, packageName, simpleTypeName);
+								// No need to check type when removed.
+								BeanClassCache.remove(project, packageName, simpleTypeName);
 								break;
 							case IResourceDelta.CHANGED:
 								if ((flags & IResourceDelta.CONTENT) != 0
 									|| (flags & IResourceDelta.MOVED_TO) != 0
 									|| flags == IResourceDelta.NO_CHANGE)
 								{
-									if (isActionBean(compilationUnit, type))
-										BeanClassCache.add(project, packageName, simpleTypeName);
-									// Remove bean property cache.
-									String qualifiedName = type.getFullyQualifiedName();
-									BeanPropertyCache.clearBeanPropertyCache(project, qualifiedName);
+									try
+									{
+										if (isActionBean(compilationUnit, type))
+											BeanClassCache.add(project, packageName, simpleTypeName);
+										// Remove bean property cache.
+										String qualifiedName = type.getFullyQualifiedName();
+										BeanPropertyCache.clearBeanPropertyCache(project, qualifiedName);
+									}
+									catch (JavaModelException e)
+									{
+										BeanClassCache.clear(project);
+										BeanPropertyCache.clearBeanPropertyCache(project);
+									}
 								}
 								break;
 							default:
@@ -105,9 +114,8 @@ public class ResourceChangeListener implements IResourceChangeListener
 					&& !Flags.isInterface(typeFlags))
 				{
 					final ITypeHierarchy supertypes = type.newSupertypeHierarchy(new NullProgressMonitor());
-					final IType actionBean = compilationUnit.getJavaProject().findType(
-						"net.sourceforge.stripes.action.ActionBean");
-					return supertypes.contains(actionBean);
+					final IType actionBean = TypeCache.getActionBean(compilationUnit.getJavaProject());
+					return actionBean == null ? false : supertypes.contains(actionBean);
 				}
 				return false;
 			}
@@ -115,7 +123,8 @@ public class ResourceChangeListener implements IResourceChangeListener
 
 		try
 		{
-			delta.accept(visitor);
+			if (delta != null)
+				delta.accept(visitor);
 		}
 		catch (CoreException e)
 		{

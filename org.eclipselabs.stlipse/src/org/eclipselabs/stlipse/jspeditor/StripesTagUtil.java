@@ -23,6 +23,8 @@ public class StripesTagUtil
 	private static final List<String> suggestableFormTags = Arrays.asList("checkbox", "file",
 		"hidden", "label", "password", "radio", "select", "text", "textarea");
 
+	private static final List<String> hasEventTags = Arrays.asList("url", "link", "useActionBean");
+
 	public static boolean isParamTag(String tagName, String attributeName)
 	{
 		final String suffix = getStripesTagSuffix(tagName);
@@ -31,8 +33,21 @@ public class StripesTagUtil
 
 	public static boolean isSuggestableFormTag(String tagName, String attributeName)
 	{
-		String suffix = getStripesTagSuffix(tagName);
+		final String suffix = getStripesTagSuffix(tagName);
 		return isSuggestableFormTagAttribute(attributeName) && suggestableFormTags.contains(suffix);
+	}
+
+	public static boolean isSubmitTag(String tagName, String attributeName)
+	{
+		final String suffix = getStripesTagSuffix(tagName);
+		return ("submit".equals(suffix) || "image".equals(suffix))
+			&& "name".equalsIgnoreCase(attributeName);
+	}
+
+	public static boolean isEventAttribute(String tagName, String attributeName)
+	{
+		final String suffix = getStripesTagSuffix(tagName);
+		return hasEventTags.contains(suffix) && "event".equalsIgnoreCase(attributeName);
 	}
 
 	static boolean isSuggestableFormTagAttribute(String attribute)
@@ -77,14 +92,18 @@ public class StripesTagUtil
 		{
 			parentNode = parentNode.getParentNode();
 		}
-		if (parentNode != null)
+		return getBeanclassAttribute(parentNode);
+	}
+
+	public static String getBeanclassAttribute(Node node)
+	{
+		if (node != null)
 		{
-			NamedNodeMap attributes = parentNode.getAttributes();
+			NamedNodeMap attributes = node.getAttributes();
 			Node beanclassAttribute = attributes.getNamedItem("beanclass");
 			if (beanclassAttribute != null)
 			{
-				String qualifiedName = beanclassAttribute.getNodeValue();
-				return qualifiedName;
+				return beanclassAttribute.getNodeValue();
 			}
 		}
 		return null;

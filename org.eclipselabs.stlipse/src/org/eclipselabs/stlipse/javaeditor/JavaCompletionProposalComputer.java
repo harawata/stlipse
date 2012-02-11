@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.Signature;
 import org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
 import org.eclipse.jdt.ui.text.java.JavaContentAssistInvocationContext;
@@ -65,11 +66,9 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 							if (replacementLength > -1)
 							{
 								String input = String.valueOf(coreContext.getToken());
-								Map<String, String> fields = BeanPropertyCache.searchFields(javaContext.getProject(),
-									unit.getType(element.getParent().getElementName()).getFullyQualifiedName(),
-									input,
-									false,
-									-1, false, unit);
+								Map<String, String> fields = BeanPropertyCache.searchFields(
+									javaContext.getProject(), unit.getType(element.getParent().getElementName())
+										.getFullyQualifiedName(), input, false, -1, false, unit);
 								proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields, input,
 									coreContext.getTokenStart() + 1, replacementLength));
 							}
@@ -87,8 +86,8 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 									matchStr.append('.').append(token);
 									Map<String, String> fields = BeanPropertyCache.searchFields(
 										javaContext.getProject(),
-										unit.getType(element.getParent().getElementName())
-											.getFullyQualifiedName(), matchStr.toString(), false, -1, false, unit);
+										unit.getType(element.getParent().getElementName()).getFullyQualifiedName(),
+										matchStr.toString(), false, -1, false, unit);
 									proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields,
 										String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
 								}
@@ -114,16 +113,34 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		{
 			result.append(elementName);
 		}
-		else if (elementType == IJavaElement.METHOD && elementName.startsWith("set")
-			&& elementName.length() > 3)
+		else if (elementType == IJavaElement.METHOD)
 		{
 			IMethod method = (IMethod)element;
-			if (Flags.isPublic(method.getFlags()) && "void".equals(method.getReturnType()))
+			if (Flags.isPublic(method.getFlags()) && (isSetter(method) || isGetter(method)))
 			{
 				result.append(BeanPropertyVisitor.getFieldNameFromAccessor(elementName));
 			}
 		}
 		return result;
+	}
+
+	private boolean isSetter(IMethod method) throws JavaModelException
+	{
+		String name = method.getElementName();
+		return isVoid(method) && name.startsWith("set") && name.length() > 3;
+	}
+
+	private boolean isGetter(IMethod method) throws JavaModelException
+	{
+		String name = method.getElementName();
+		return !isVoid(method)
+			&& ((name.startsWith("get") && name.length() > 3) || name.startsWith("is")
+				&& name.length() > 2);
+	}
+
+	private boolean isVoid(IMethod method) throws JavaModelException
+	{
+		return String.valueOf(Signature.C_VOID).equals(method.getReturnType());
 	}
 
 	private int getAllowDenyValueLength(int offset, IAnnotatable annotatable)

@@ -33,6 +33,11 @@ public class BeanPropertyCache
 {
 	private static final Map<IProject, Map<String, BeanPropertyInfo>> projectCache = new ConcurrentHashMap<IProject, Map<String, BeanPropertyInfo>>();
 
+	public static void clearBeanPropertyCache(IProject project)
+	{
+		projectCache.remove(project);
+	}
+
 	public static void clearBeanPropertyCache(IProject project, String qualifiedName)
 	{
 		Map<String, BeanPropertyInfo> beans = projectCache.get(project);
@@ -86,20 +91,43 @@ public class BeanPropertyCache
 		{
 			Map<String, String> readableFields = new LinkedHashMap<String, String>();
 			Map<String, String> writableFields = new LinkedHashMap<String, String>();
+			Map<String, Boolean> eventHandlers = new LinkedHashMap<String, Boolean>();
 
 			ASTParser parser = ASTParser.newParser(AST.JLS4);
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
 			parser.setSource(compilationUnit);
 			parser.setResolveBindings(true);
+			// parser.setIgnoreMethodBodies(true);
 			CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-			astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields));
+			astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields,
+				eventHandlers));
 
-			beanProps = new BeanPropertyInfo(readableFields, writableFields);
+			beanProps = new BeanPropertyInfo(readableFields, writableFields, eventHandlers);
 			beans.put(qualifiedName, beanProps);
 
 			return beanProps;
 		}
 		return null;
+	}
+
+	public static List<String> searchEventHandler(IJavaProject project, String qualifiedName,
+		String matchStr, boolean isValidation)
+	{
+		final List<String> results = new ArrayList<String>();
+		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, null);
+		if (beanProperty != null)
+		{
+			for (Entry<String, Boolean> eventHandler : beanProperty.getEventHandlers().entrySet())
+			{
+				String handlerName = eventHandler.getKey();
+				boolean isDefaultHandler = Boolean.TRUE.equals(eventHandler.getValue());
+				if (handlerName.startsWith(matchStr) || (isValidation && isDefaultHandler))
+				{
+					results.add(handlerName);
+				}
+			}
+		}
+		return results;
 	}
 
 	public static Map<String, String> searchFields(IJavaProject project, String qualifiedName,

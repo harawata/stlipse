@@ -25,6 +25,15 @@ public class BeanClassInfo
 		this.simpleTypeName = simpleTypeName;
 	}
 
+	public BeanClassInfo(String packageName, String simpleTypeName)
+	{
+		super();
+		if (packageName != null)
+			this.packageName = packageName.toCharArray();
+		if (simpleTypeName != null)
+			this.simpleTypeName = simpleTypeName.toCharArray();
+	}
+
 	public char[] getPackageName()
 	{
 		return packageName;
@@ -33,6 +42,16 @@ public class BeanClassInfo
 	public char[] getSimpleTypeName()
 	{
 		return simpleTypeName;
+	}
+
+	public boolean matches(String qualifiedName)
+	{
+		if (qualifiedName == null || qualifiedName.length() == 0)
+			return false;
+
+		final StringBuilder sb = new StringBuilder();
+		sb.append(packageName).append('.').append(simpleTypeName);
+		return qualifiedName.equals(sb.toString());
 	}
 
 	public boolean matches(char[] pkg, char[] type)

@@ -5,6 +5,7 @@
 
 package org.eclipselabs.stlipse.jspeditor;
 
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
@@ -16,7 +17,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.wst.sse.core.StructuredModelManager;
@@ -34,6 +34,7 @@ import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMElement;
 import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 import org.eclipselabs.stlipse.Activator;
+import org.eclipselabs.stlipse.cache.BeanClassCache;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -50,6 +51,8 @@ public class JspValidator extends AbstractValidator implements IValidator
 	public static final String MISSING_ACTION_BEAN = "missingActionBean";
 
 	public static final String NO_WRITABLE_PROPERTY = "noWritableProperty";
+
+	public static final String NO_EVENT_HANDLER = "noEventhandler";
 
 	public void cleanup(IReporter reporter)
 	{
@@ -130,19 +133,36 @@ public class JspValidator extends AbstractValidator implements IValidator
 		{
 			IDOMAttr attr = (IDOMAttr)attrs.item(i);
 			String attributeName = attr.getName();
+			String attrValue = attr.getValue().trim();
 
-			if ("beanclass".equals(attributeName))
+			if (containsElExpression(attrValue))
 			{
-				validateBeanclass(project, file, doc, attr);
+				// ignore EL expressions
+			}
+			else if ("beanclass".equals(attributeName))
+			{
+				validateBeanclass(project, file, doc, attr, attrValue);
 			}
 			else if (StripesTagUtil.isSuggestableFormTag(tagName, attributeName)
 				&& !"label".equals(StripesTagUtil.getStripesTagSuffix(tagName)))
 			{
-				validateFormTag(project, file, doc, element, attr);
+				String beanclass = StripesTagUtil.getParentBeanclass(element, "form");
+				validateField(project, file, doc, element, attr, beanclass, attrValue);
 			}
 			else if (StripesTagUtil.isParamTag(tagName, attributeName))
 			{
-				validateParamTag(project, file, doc, element, attr);
+				String beanclass = StripesTagUtil.getParentBeanclass(element, "url", "link");
+				validateField(project, file, doc, element, attr, beanclass, attrValue);
+			}
+			else if (StripesTagUtil.isSubmitTag(tagName, attributeName))
+			{
+				String beanclass = StripesTagUtil.getParentBeanclass(element, "form");
+				validateEvent(project, file, doc, element, attr, beanclass, attrValue);
+			}
+			else if (StripesTagUtil.isEventAttribute(tagName, attributeName))
+			{
+				String beanclass = StripesTagUtil.getBeanclassAttribute(element);
+				validateEvent(project, file, doc, element, attr, beanclass, attrValue);
 			}
 		}
 
@@ -157,14 +177,9 @@ public class JspValidator extends AbstractValidator implements IValidator
 		}
 	}
 
-	private void validateParamTag(IJavaProject project, IFile file, IStructuredDocument doc,
-		IDOMElement element, IDOMAttr attr)
+	private void validateField(IJavaProject project, IFile file, IStructuredDocument doc,
+		IDOMElement element, IDOMAttr attr, String beanclass, String property)
 	{
-		String property = attr.getValue().trim();
-		if (containsElExpression(property))
-			return;
-
-		String beanclass = StripesTagUtil.getParentBeanclass(element, "url", "link");
 		if (beanclass != null)
 		{
 			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass, property,
@@ -172,44 +187,34 @@ public class JspValidator extends AbstractValidator implements IValidator
 			if (fields.size() == 0)
 			{
 				addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
-					IMarker.PRIORITY_NORMAL, "No writable property found.");
+					IMarker.PRIORITY_NORMAL, "Writable property '" + property + "' not found in "
+						+ beanclass);
 			}
 		}
 	}
 
-	private void validateFormTag(IJavaProject project, IFile file, IStructuredDocument doc,
-		IDOMElement element, IDOMAttr attr)
+	private void validateEvent(IJavaProject project, IFile file, IStructuredDocument doc,
+		IDOMElement element, IDOMAttr attr, String beanclass, String event)
 	{
-		String property = attr.getValue().trim();
-		if (containsElExpression(property))
-			return;
-
-		String beanclass = StripesTagUtil.getParentBeanclass(element, "form");
 		if (beanclass != null)
 		{
-			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
-				property, false, -1, true, null);
-			if (fields.size() == 0)
+			List<String> events = BeanPropertyCache.searchEventHandler(project, beanclass, event,
+				true);
+			if (events.size() == 0)
 			{
-				addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
-					IMarker.PRIORITY_NORMAL, "No writable property found.");
+				addMarker(file, doc, attr, NO_EVENT_HANDLER, IMarker.SEVERITY_WARNING,
+					IMarker.PRIORITY_NORMAL, "Event handler '" + event + "' not found in " + beanclass);
 			}
 		}
 	}
 
 	private void validateBeanclass(IJavaProject project, IFile file, IStructuredDocument doc,
-		IDOMAttr attr) throws JavaModelException
+		IDOMAttr attr, String beanclass) throws JavaModelException
 	{
-		String className = attr.getValue().trim();
-		// Ignore EL expression.
-		if (containsElExpression(className))
-			return;
-
-		IType type = project.findType(className);
-		if (type == null || !type.exists())
+		if (!BeanClassCache.actionBeanExists(project, beanclass))
 		{
 			addMarker(file, doc, attr, MISSING_ACTION_BEAN, IMarker.SEVERITY_ERROR,
-				IMarker.PRIORITY_HIGH, "ActionBean not found.");
+				IMarker.PRIORITY_HIGH, "ActionBean '" + beanclass + "' not found.");
 		}
 	}
 

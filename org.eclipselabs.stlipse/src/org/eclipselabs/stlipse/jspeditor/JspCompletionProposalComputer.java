@@ -37,6 +37,7 @@ import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.cache.BeanClassCache;
 import org.eclipselabs.stlipse.cache.BeanClassInfo;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
+import org.eclipselabs.stlipse.javaeditor.JavaCompletionProposal;
 import org.eclipselabs.stlipse.util.ClassNameUtil;
 
 /**
@@ -104,54 +105,80 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 
 			if ("beanclass".equalsIgnoreCase(attributeName))
 			{
-				List<ICompletionProposal> classProposals = getBeanclassProposals(context,
-					contentAssistRequest, matchString, start, length);
-				if (classProposals != null)
-				{
-					for (ICompletionProposal proposal : classProposals)
-					{
-						contentAssistRequest.addProposal(proposal);
-					}
-				}
+				proposeBeanclass(contentAssistRequest, context, matchString, start, length);
 			}
 			else if (StripesTagUtil.isSuggestableFormTag(tagName, attributeName))
 			{
 				String beanclass = StripesTagUtil.getParentBeanclass(node, "form");
-				if (beanclass != null)
-				{
-					IResource resource = getResource(contentAssistRequest);
-					IJavaProject project = getJavaProject(resource);
-					boolean includeReadOnly = "label".equals(StripesTagUtil.getStripesTagSuffix(tagName));
-					Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
-						matchString,
-						includeReadOnly, -1, false, null);
-					List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
-						fields,
-						matchString, start, length);
-					for (ICompletionProposal proposal : proposals)
-					{
-						contentAssistRequest.addProposal(proposal);
-					}
-				}
+				boolean includeReadOnly = "label".equals(StripesTagUtil.getStripesTagSuffix(tagName));
+				proposalField(contentAssistRequest, matchString, start, length, beanclass,
+					includeReadOnly);
 			}
 			else if (StripesTagUtil.isParamTag(tagName, attributeName))
 			{
 				String beanclass = StripesTagUtil.getParentBeanclass(node, "url", "link");
-				if (beanclass != null)
-				{
-					IResource resource = getResource(contentAssistRequest);
-					IJavaProject project = getJavaProject(resource);
-					Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
-						matchString,
-						false, -1, false, null);
-					List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(
-						fields,
-						matchString, start, length);
-					for (ICompletionProposal proposal : proposals)
-					{
-							contentAssistRequest.addProposal(proposal);
-					}
-				}
+				proposalField(contentAssistRequest, matchString, start, length, beanclass, false);
+			}
+			else if (StripesTagUtil.isSubmitTag(tagName, attributeName))
+			{
+				String beanclass = StripesTagUtil.getParentBeanclass(node, "form");
+				proposeEvent(contentAssistRequest, node, matchString, start, length, beanclass);
+			}
+			else if (StripesTagUtil.isEventAttribute(tagName, attributeName))
+			{
+				String beanclass = StripesTagUtil.getBeanclassAttribute(node);
+				proposeEvent(contentAssistRequest, node, matchString, start, length, beanclass);
+			}
+		}
+	}
+
+	private void proposeEvent(ContentAssistRequest contentAssistRequest, IDOMNode node,
+		String matchString, int start, int length, String beanclass)
+	{
+		if (beanclass != null)
+		{
+			IResource resource = getResource(contentAssistRequest);
+			IJavaProject project = getJavaProject(resource);
+			List<String> events = BeanPropertyCache.searchEventHandler(project, beanclass,
+				matchString, false);
+			int relevance = events.size();
+			for (String event : events)
+			{
+				ICompletionProposal proposal = new JavaCompletionProposal(event, start, length,
+					event.length(), Activator.getIcon(), event, null, null, relevance--);
+				contentAssistRequest.addProposal(proposal);
+			}
+		}
+	}
+
+	private void proposalField(ContentAssistRequest contentAssistRequest, String matchString,
+		int start, int length, String beanclass, boolean includeReadOnly)
+	{
+		if (beanclass != null)
+		{
+			IResource resource = getResource(contentAssistRequest);
+			IJavaProject project = getJavaProject(resource);
+			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
+				matchString, includeReadOnly, -1, false, null);
+			List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(fields,
+				matchString, start, length);
+			for (ICompletionProposal proposal : proposals)
+			{
+				contentAssistRequest.addProposal(proposal);
+			}
+		}
+	}
+
+	private void proposeBeanclass(ContentAssistRequest contentAssistRequest,
+		CompletionProposalInvocationContext context, String matchString, int start, int length)
+	{
+		List<ICompletionProposal> classProposals = getBeanclassProposals(context,
+			contentAssistRequest, matchString, start, length);
+		if (classProposals != null)
+		{
+			for (ICompletionProposal proposal : classProposals)
+			{
+				contentAssistRequest.addProposal(proposal);
 			}
 		}
 	}
@@ -162,29 +189,32 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 	{
 		final List<ICompletionProposal> proposalList = new ArrayList<ICompletionProposal>();
 		final IResource resource = getResource(contentAssistRequest);
-		final List<BeanClassInfo> beanClassList = BeanClassCache.getBeanClassInfo(getJavaProject(resource));
 		final String packageName = ClassNameUtil.getPackage(input);
 		final String typeName = ClassNameUtil.getTypeName(input);
-		for (BeanClassInfo beanClass : beanClassList)
+		final List<BeanClassInfo> beanClassList = BeanClassCache.getBeanClassInfo(getJavaProject(resource));
+		synchronized (beanClassList)
 		{
-			if (beanClass.matches(packageName.toCharArray(), typeName.toCharArray()))
+			for (BeanClassInfo beanClass : beanClassList)
 			{
-				StringBuilder replacementString = new StringBuilder();
-				replacementString.append(beanClass.getPackageName())
-					.append('.')
-					.append(beanClass.getSimpleTypeName());
+				if (beanClass.matches(packageName.toCharArray(), typeName.toCharArray()))
+				{
+					StringBuilder replacementString = new StringBuilder();
+					replacementString.append(beanClass.getPackageName())
+						.append('.')
+						.append(beanClass.getSimpleTypeName());
 
-				StringBuilder displayString = new StringBuilder();
-				displayString.append(beanClass.getSimpleTypeName())
-					.append(" - ")
-					.append(beanClass.getPackageName());
+					StringBuilder displayString = new StringBuilder();
+					displayString.append(beanClass.getSimpleTypeName())
+						.append(" - ")
+						.append(beanClass.getPackageName());
 
-				int replacementOffset = offset;
-				int cursorPosition = replacementString.length();
-				ICompletionProposal proposal = new CompletionProposal(replacementString.toString(),
-					replacementOffset, replacementLength, cursorPosition, Activator.getIcon(),
-					displayString.toString(), null, null);
-				proposalList.add(proposal);
+					int replacementOffset = offset;
+					int cursorPosition = replacementString.length();
+					ICompletionProposal proposal = new CompletionProposal(replacementString.toString(),
+						replacementOffset, replacementLength, cursorPosition, Activator.getIcon(),
+						displayString.toString(), null, null);
+					proposalList.add(proposal);
+				}
 			}
 		}
 		return proposalList;
@@ -247,6 +277,8 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 	{
 		return "beanclass".equalsIgnoreCase(attributeName)
 			|| StripesTagUtil.isSuggestableFormTag(tagName, attributeName)
-			|| StripesTagUtil.isParamTag(tagName, attributeName);
+			|| StripesTagUtil.isParamTag(tagName, attributeName)
+			|| StripesTagUtil.isSubmitTag(tagName, attributeName)
+			|| StripesTagUtil.isEventAttribute(tagName, attributeName);
 	}
 }
