@@ -129,10 +129,17 @@ public class BeanPropertyVisitor extends ASTVisitor
 							{
 								Object annotationValue = null;
 								Boolean isDefaultHandler = Boolean.FALSE;
+								boolean isInterceptor = false;
 								for (IAnnotationBinding annotation : node.resolveBinding().getAnnotations())
 								{
-									isDefaultHandler = "DefaultHandler".equals(annotation.getName());
-									if ("HandlesEvent".equals(annotation.getName()))
+									String name = annotation.getName();
+
+									isInterceptor |= ("Before".equals(name) || "After".equals(name));
+									if (isInterceptor)
+										break;
+
+									isDefaultHandler |= "DefaultHandler".equals(name);
+									if ("HandlesEvent".equals(name))
 									{
 										IMemberValuePairBinding[] valuePairs = annotation.getAllMemberValuePairs();
 										for (IMemberValuePairBinding valuePair : valuePairs)
@@ -144,8 +151,9 @@ public class BeanPropertyVisitor extends ASTVisitor
 										}
 									}
 								}
-								eventHandlers.put((String)(annotationValue == null ? methodName
-									: annotationValue), isDefaultHandler);
+								if (!isInterceptor)
+									eventHandlers.put((String)(annotationValue == null ? methodName
+										: annotationValue), isDefaultHandler);
 							}
 						}
 						catch (JavaModelException e)
