@@ -157,12 +157,12 @@ public class JspValidator extends AbstractValidator implements IValidator
 			else if (StripesTagUtil.isSubmitTag(tagName, attributeName))
 			{
 				String beanclass = StripesTagUtil.getParentBeanclass(element, "form");
-				validateEvent(project, file, doc, element, attr, beanclass, attrValue);
+				validateEvent(project, file, doc, element, attr, beanclass, attrValue, true);
 			}
 			else if (StripesTagUtil.isEventAttribute(tagName, attributeName))
 			{
 				String beanclass = StripesTagUtil.getBeanclassAttribute(element);
-				validateEvent(project, file, doc, element, attr, beanclass, attrValue);
+				validateEvent(project, file, doc, element, attr, beanclass, attrValue, false);
 			}
 		}
 
@@ -194,12 +194,13 @@ public class JspValidator extends AbstractValidator implements IValidator
 	}
 
 	private void validateEvent(IJavaProject project, IFile file, IStructuredDocument doc,
-		IDOMElement element, IDOMAttr attr, String beanclass, String event)
+		IDOMElement element, IDOMAttr attr, String beanclass, String event,
+		boolean validIfDefaultHandlerExists)
 	{
 		if (beanclass != null)
 		{
 			List<String> events = BeanPropertyCache.searchEventHandler(project, beanclass, event,
-				true);
+				true, validIfDefaultHandlerExists);
 			if (events.size() == 0)
 			{
 				addMarker(file, doc, attr, NO_EVENT_HANDLER, IMarker.SEVERITY_WARNING,

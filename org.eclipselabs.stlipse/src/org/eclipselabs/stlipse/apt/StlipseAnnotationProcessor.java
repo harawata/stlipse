@@ -50,7 +50,7 @@ public class StlipseAnnotationProcessor implements AnnotationProcessor
 				Collection<Declaration> annotatedProperties = env.getDeclarationsAnnotatedWith(annotation);
 				for (Declaration annotatedProperty : annotatedProperties)
 				{
-					StlipseAnnotationVisitor visitor = new StlipseAnnotationVisitor(
+					StlipseAnnotationVisitor visitor = new StlipseAnnotationVisitor(annotationType,
 						javaProject, actionBeanType, env.getMessager());
 					annotatedProperty.accept(visitor);
 				}

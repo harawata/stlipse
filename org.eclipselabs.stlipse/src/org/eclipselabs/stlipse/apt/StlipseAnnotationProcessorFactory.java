@@ -22,9 +22,20 @@ import com.sun.mirror.declaration.AnnotationTypeDeclaration;
 public class StlipseAnnotationProcessorFactory implements AnnotationProcessorFactory
 {
 
+	public static final String STRICT_BINDING = "net.sourceforge.stripes.action.StrictBinding";
+
+	public static final String VALIDATE_NESTED_PROPERTIES = "net.sourceforge.stripes.validation.ValidateNestedProperties";
+
+	public static final String VALIDATE = "net.sourceforge.stripes.validation.Validate";
+
+	public static final String BEFORE = "net.sourceforge.stripes.action.Before";
+
+	public static final String AFTER = "net.sourceforge.stripes.action.After";
+
+	public static final String VALIDATION_METHOD = "net.sourceforge.stripes.validation.ValidationMethod";
+
 	public static final List<String> SUPPORTED_ANNOTATIONS = Arrays.asList(
-		"net.sourceforge.stripes.validation.ValidateNestedProperties",
-		"net.sourceforge.stripes.action.StrictBinding");
+		VALIDATE_NESTED_PROPERTIES, VALIDATE, STRICT_BINDING, BEFORE, AFTER, VALIDATION_METHOD);
 
 	public AnnotationProcessor getProcessorFor(Set<AnnotationTypeDeclaration> arg0,
 		AnnotationProcessorEnvironment env)

@@ -6,6 +6,7 @@
 package org.eclipselabs.stlipse.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +112,7 @@ public class BeanPropertyCache
 	}
 
 	public static List<String> searchEventHandler(IJavaProject project, String qualifiedName,
-		String matchStr, boolean isValidation)
+		String matchStr, boolean isValidation, boolean alwaysIncludeDefault)
 	{
 		final List<String> results = new ArrayList<String>();
 		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, null);
@@ -121,13 +122,21 @@ public class BeanPropertyCache
 			{
 				String handlerName = eventHandler.getKey();
 				boolean isDefaultHandler = Boolean.TRUE.equals(eventHandler.getValue());
-				if (handlerName.startsWith(matchStr) || (isValidation && isDefaultHandler))
+				if ((alwaysIncludeDefault && isDefaultHandler)
+					|| (isValidation && handlerName.equals(matchStr)) || handlerName.startsWith(matchStr))
 				{
 					results.add(handlerName);
 				}
 			}
 		}
 		return results;
+	}
+
+	public static Map<String, Boolean> getEventHandlers(IJavaProject project, String qualifiedName)
+	{
+		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, null);
+		return beanProperty == null ? Collections.<String, Boolean> emptyMap()
+			: beanProperty.getEventHandlers();
 	}
 
 	public static Map<String, String> searchFields(IJavaProject project, String qualifiedName,

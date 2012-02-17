@@ -140,7 +140,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 			IResource resource = getResource(contentAssistRequest);
 			IJavaProject project = getJavaProject(resource);
 			List<String> events = BeanPropertyCache.searchEventHandler(project, beanclass,
-				matchString, false);
+				matchString, false, false);
 			int relevance = events.size();
 			for (String event : events)
 			{
