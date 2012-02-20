@@ -6,6 +6,7 @@
 package org.eclipselabs.stlipse.javaeditor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.ISourceRange;
@@ -36,6 +38,17 @@ import org.eclipselabs.stlipse.cache.BeanPropertyVisitor;
  */
 public class JavaCompletionProposalComputer implements IJavaCompletionProposalComputer
 {
+	private static String VALIDATE_NESTED = "ValidateNestedProperties";
+
+	private static String VALIDATE = "Validate";
+
+	private static String STRICT_BINDING = "StrictBinding";
+
+	private static String AFTER = "After";
+
+	private static String BEFORE = "Before";
+
+	private static String VALIDATION_METHOD = "ValidationMethod";
 
 	public void sessionStarted()
 	{
@@ -59,37 +72,56 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 					IJavaElement element = unit.getElementAt(offset);
 					if (element != null && element instanceof IAnnotatable)
 					{
-						if (element.getElementType() == IJavaElement.TYPE)
+						ValueInfo valueInfo = scanAnnotation(offset, (IAnnotatable)element);
+						if (valueInfo != null)
 						{
-							// search @StrictBinding
-							int replacementLength = getAllowDenyValueLength(offset, (IAnnotatable)element);
-							if (replacementLength > -1)
+							int replacementLength = valueInfo.getValueLength();
+							IJavaProject project = javaContext.getProject();
+							String beanFqn = unit.getType(element.getParent().getElementName())
+								.getFullyQualifiedName();
+							if (valueInfo.isField())
+							{
+								if (valueInfo.isPropertyOmmitted())
+								{
+									StringBuilder matchStr = resolveBeanPropertyName(element);
+									if (matchStr.length() > 0)
+									{
+										char[] token = coreContext.getToken();
+										matchStr.append('.').append(token);
+										Map<String, String> fields = BeanPropertyCache.searchFields(project,
+											beanFqn, matchStr.toString(), false, -1, false, unit);
+										proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields,
+											String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
+									}
+								}
+								else
+								{
+									String input = String.valueOf(coreContext.getToken());
+									Map<String, String> fields = BeanPropertyCache.searchFields(project, beanFqn,
+										input, false, -1, false, unit);
+									proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields, input,
+										coreContext.getTokenStart() + 1, replacementLength));
+								}
+							}
+							else if (valueInfo.isEventHandler())
 							{
 								String input = String.valueOf(coreContext.getToken());
-								Map<String, String> fields = BeanPropertyCache.searchFields(
-									javaContext.getProject(), unit.getType(element.getParent().getElementName())
-										.getFullyQualifiedName(), input, false, -1, false, unit);
-								proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields, input,
-									coreContext.getTokenStart() + 1, replacementLength));
-							}
-						}
-						else
-						{
-							// search @Validate
-							StringBuilder matchStr = resolveBeanPropertyName(element);
-							if (matchStr.length() > 0)
-							{
-								int replacementLength = getFieldValueLength(offset, (IAnnotatable)element);
-								if (replacementLength > -1)
+								boolean isNot = false;
+								if (input.length() > 0 && input.startsWith("!"))
 								{
-									char[] token = coreContext.getToken();
-									matchStr.append('.').append(token);
-									Map<String, String> fields = BeanPropertyCache.searchFields(
-										javaContext.getProject(),
-										unit.getType(element.getParent().getElementName()).getFullyQualifiedName(),
-										matchStr.toString(), false, -1, false, unit);
-									proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields,
-										String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
+									isNot = true;
+									input = input.length() > 1 ? input.substring(1) : "";
+								}
+								List<String> events = BeanPropertyCache.searchEventHandler(project, beanFqn,
+									input, false, false);
+								int relevance = events.size();
+								for (String event : events)
+								{
+									String replaceStr = isNot ? "!" + event : event;
+									ICompletionProposal proposal = new JavaCompletionProposal(replaceStr,
+										coreContext.getTokenStart() + 1, replacementLength, replaceStr.length(),
+										Activator.getIcon(), event, null, null, relevance--);
+									proposals.add(proposal);
 								}
 							}
 						}
@@ -143,135 +175,135 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		return String.valueOf(Signature.C_VOID).equals(method.getReturnType());
 	}
 
-	private int getAllowDenyValueLength(int offset, IAnnotatable annotatable)
+	private ValueInfo scanAnnotation(int offset, IAnnotatable annotatable)
 		throws JavaModelException
 	{
 		IAnnotation[] annotations = annotatable.getAnnotations();
 		for (IAnnotation annotation : annotations)
 		{
-			int len = getAnnotationValueLength(offset, annotation, "StrictBinding", "allow", "deny");
-			if (len > -1)
-				return len;
-		}
-		return -1;
-	}
-
-	private int getFieldValueLength(int offset, IAnnotatable annotatable)
-		throws JavaModelException
-	{
-		IAnnotation[] annotations = annotatable.getAnnotations();
-		for (IAnnotation annotation : annotations)
-		{
-			if ("ValidateNestedProperties".equals(annotation.getElementName())
-				&& isInRange(annotation.getSourceRange(), offset))
+			ISourceRange sourceRange = annotation.getSourceRange();
+			if (isInRange(sourceRange, offset))
 			{
-				IMemberValuePair[] valuePairs = annotation.getMemberValuePairs();
-				for (IMemberValuePair valuePair : valuePairs)
+				String annotationName = annotation.getElementName();
+				if (VALIDATE_NESTED.equals(annotationName))
 				{
-					if ("value".equals(valuePair.getMemberName())
-						&& valuePair.getValueKind() == IMemberValuePair.K_ANNOTATION)
+					// parse nested @Validate
+					IMemberValuePair[] valuePairs = annotation.getMemberValuePairs();
+					for (IMemberValuePair valuePair : valuePairs)
 					{
-						// the value is an array of IAnnotation
-						Object[] items = (Object[])valuePair.getValue();
-						for (Object item : items)
+						if ("value".equals(valuePair.getMemberName())
+							&& valuePair.getValueKind() == IMemberValuePair.K_ANNOTATION)
 						{
-							int len = getAnnotationValueLength(offset, (IAnnotation)item, "Validate", "field");
-							if (len > -1)
-								return len;
+							// the value is an array of IAnnotation
+							Object[] validates = (Object[])valuePair.getValue();
+							for (Object validate : validates)
+							{
+								IAnnotation validateAnnotation = (IAnnotation)validate;
+								ISourceRange validateSourceRange = validateAnnotation.getSourceRange();
+								if (isInRange(validateSourceRange, offset))
+									return parseAnnotation(offset, validateAnnotation, validateSourceRange);
+							}
 						}
 					}
 				}
+				else if (isNonNestedSupportedAnnotation(annotationName))
+				{
+					return parseAnnotation(offset, annotation, sourceRange);
+				}
 			}
 		}
-		return -1;
+		return null;
 	}
 
-	private int getAnnotationValueLength(int offset, IAnnotation annotation,
-		String annotationName, String... annotationAttributeNames) throws JavaModelException
+	private static boolean isNonNestedSupportedAnnotation(String annotationName)
 	{
-		ISourceRange sourceRange = annotation.getSourceRange();
-		if (annotationName.equals(annotation.getElementName()) && isInRange(sourceRange, offset))
+		final List<String> annotations = Arrays.asList(VALIDATE, STRICT_BINDING, BEFORE, AFTER,
+			VALIDATION_METHOD);
+		return annotations.contains(annotationName);
+	}
+
+	private ValueInfo parseAnnotation(int offset, IAnnotation annotation, ISourceRange sourceRange)
+		throws JavaModelException
+	{
+		int annotationOffset = sourceRange.getOffset();
+		String source = annotation.getSource();
+		int index = source.indexOf('(', annotation.getElementName().length() + 1);
+		if (index > -1)
 		{
-			int annotationOffset = sourceRange.getOffset();
-			String source = annotation.getSource();
-			int index = source.indexOf('(', 9);
-			if (index > -1)
+			int stringValueLength = 0;
+			boolean scanningName = true;
+			boolean scanningValue = false;
+			boolean inStringValue = false;
+			boolean inArrayValue = false;
+			boolean escaped = false;
+			StringBuilder optionName = new StringBuilder();
+			for (index++; index < source.length(); index++)
 			{
-				int stringValueLength = 0;
-				boolean scanningName = true;
-				boolean scanningValue = false;
-				boolean inStringValue = false;
-				boolean inArrayValue = false;
-				boolean escaped = false;
-				StringBuilder optionName = new StringBuilder();
-				for (index++; index < source.length(); index++)
+				char c = source.charAt(index);
+				if (scanningName)
 				{
-					char c = source.charAt(index);
-					if (scanningName)
+					if (c == '=')
+						scanningName = false;
+					else if (c != ' ')
+						optionName.append(c);
+				}
+				else if (!scanningValue)
+				{
+					if (c != ' ')
 					{
-						if (c == '=')
-							scanningName = false;
-						else if (c != ' ')
-							optionName.append(c);
-					}
-					else if (!scanningValue)
-					{
-						if (c != ' ')
+						scanningValue = true;
+						if (c == '"')
 						{
-							scanningValue = true;
-							if (c == '"')
-							{
-								inStringValue = true;
-								stringValueLength = 0;
-							}
-							else if (c == '{')
-								inArrayValue = true;
+							inStringValue = true;
+							stringValueLength = 0;
 						}
+						else if (c == '{')
+							inArrayValue = true;
 					}
-					else
+				}
+				else
+				{
+					// scanning value part
+					if (inStringValue)
 					{
-						// scanning value part
+						if (escaped)
+							; // ignore the escaped character
+						else if (c == '\\')
+							escaped = true;
+						else if (c == '"')
+						{
+							if (annotationOffset + index >= offset)
+								break;
+							inStringValue = false;
+							stringValueLength = 0;
+						}
 						if (inStringValue)
-						{
-							if (escaped)
-								; // ignore the escaped character
-							else if (c == '\\')
-								escaped = true;
-							else if (c == '"')
-							{
-								if (annotationOffset + index >= offset)
-									break;
-								inStringValue = false;
-								stringValueLength = 0;
-							}
-							if (inStringValue)
-								stringValueLength++;
-						}
-						else if (inArrayValue)
-						{
-							if (c == '"')
-								inStringValue = true;
-							else if (c == '}')
-								inArrayValue = false;
-							else
-								; // ignore
-						}
-						else if (c == ',')
-						{
-							scanningValue = false;
-							scanningName = true;
-							optionName.setLength(0);
-						}
+							stringValueLength++;
+					}
+					else if (inArrayValue)
+					{
+						if (c == '"')
+							inStringValue = true;
+						else if (c == '}')
+							inArrayValue = false;
+						else
+							; // ignore
+					}
+					else if (c == ',')
+					{
+						scanningValue = false;
+						scanningName = true;
+						optionName.setLength(0);
 					}
 				}
-				for (String attributeName : annotationAttributeNames)
-				{
-					if (attributeName.equals(optionName.toString()))
-						return stringValueLength;
-				}
+			}
+			if (optionName.length() > 0)
+			{
+				return new ValueInfo(annotation.getElementName(), optionName.toString(),
+					stringValueLength);
 			}
 		}
-		return -1;
+		return null;
 	}
 
 	private boolean isInRange(ISourceRange sourceRange, int offset)
@@ -297,4 +329,52 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 		// Nothing todo for now.
 	}
 
+	static class ValueInfo
+	{
+		private String annotationName;
+
+		private String attributeName;
+
+		private int valueLength;
+
+		public ValueInfo(String annotationName, String attributeName, int valueLength)
+		{
+			super();
+			this.annotationName = annotationName;
+			this.attributeName = attributeName;
+			this.valueLength = valueLength;
+		}
+
+		public boolean isField()
+		{
+			return (STRICT_BINDING.equals(annotationName) && ("allow".equals(attributeName) || "deny".equals(attributeName)))
+				|| (VALIDATE.equals(annotationName) && "field".equals(attributeName));
+		}
+
+		public boolean isPropertyOmmitted()
+		{
+			return !STRICT_BINDING.equals(annotationName);
+		}
+
+		public boolean isEventHandler()
+		{
+			return ("on".equals(attributeName) && (VALIDATE.equals(annotationName)
+				|| AFTER.equals(annotationName) || BEFORE.equals(annotationName) || VALIDATION_METHOD.equals(annotationName)));
+		}
+
+		public String getAnnotationName()
+		{
+			return annotationName;
+		}
+
+		public String getAttributeName()
+		{
+			return attributeName;
+		}
+
+		public int getValueLength()
+		{
+			return valueLength;
+		}
+	}
 }
