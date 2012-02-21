@@ -176,9 +176,8 @@ public class BeanPropertyVisitor extends ASTVisitor
 			if (binding.isParameterizedType())
 			{
 				ITypeBinding[] arguments = binding.getTypeArguments();
-				// Assuming collection.
-				// TODO: map?
-				qualifiedName = arguments[0].getQualifiedName();
+				// length = 1 -> List, length > 1 -> Map
+				qualifiedName = arguments[arguments.length > 1 ? 1 : 0].getQualifiedName();
 			}
 			else
 			{
