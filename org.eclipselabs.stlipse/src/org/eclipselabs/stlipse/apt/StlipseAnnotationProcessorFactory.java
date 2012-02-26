@@ -34,8 +34,11 @@ public class StlipseAnnotationProcessorFactory implements AnnotationProcessorFac
 
 	public static final String VALIDATION_METHOD = "net.sourceforge.stripes.validation.ValidationMethod";
 
+	public static final String WIZARD = "net.sourceforge.stripes.action.Wizard";
+
 	public static final List<String> SUPPORTED_ANNOTATIONS = Arrays.asList(
-		VALIDATE_NESTED_PROPERTIES, VALIDATE, STRICT_BINDING, BEFORE, AFTER, VALIDATION_METHOD);
+		VALIDATE_NESTED_PROPERTIES, VALIDATE, STRICT_BINDING, BEFORE, AFTER, VALIDATION_METHOD,
+		WIZARD);
 
 	public AnnotationProcessor getProcessorFor(Set<AnnotationTypeDeclaration> arg0,
 		AnnotationProcessorEnvironment env)

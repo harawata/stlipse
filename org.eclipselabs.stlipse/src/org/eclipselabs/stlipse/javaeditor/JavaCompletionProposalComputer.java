@@ -50,6 +50,8 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 
 	private static String VALIDATION_METHOD = "ValidationMethod";
 
+	private static String WIZARD = "Wizard";
+
 	public void sessionStarted()
 	{
 		// Nothing todo for now.
@@ -218,7 +220,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 	private static boolean isNonNestedSupportedAnnotation(String annotationName)
 	{
 		final List<String> annotations = Arrays.asList(VALIDATE, STRICT_BINDING, BEFORE, AFTER,
-			VALIDATION_METHOD);
+			VALIDATION_METHOD, WIZARD);
 		return annotations.contains(annotationName);
 	}
 
@@ -358,8 +360,9 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 
 		public boolean isEventHandler()
 		{
-			return ("on".equals(attributeName) && (VALIDATE.equals(annotationName)
-				|| AFTER.equals(annotationName) || BEFORE.equals(annotationName) || VALIDATION_METHOD.equals(annotationName)));
+			return (("on".equals(attributeName) && (VALIDATE.equals(annotationName)
+				|| AFTER.equals(annotationName) || BEFORE.equals(annotationName) || VALIDATION_METHOD.equals(annotationName))))
+				|| ("startEvents".equals(attributeName) && WIZARD.equals(annotationName));
 		}
 
 		public String getAnnotationName()

@@ -16,12 +16,12 @@ public class BeanPropertyInfo
 
 	private Map<String, String> writableFields;
 
-	private Map<String, Boolean> eventHandlers;
+	private Map<String, EventProperty> eventHandlers;
 
 	public BeanPropertyInfo(
 		Map<String, String> readableFields,
 		Map<String, String> writableFields,
-		Map<String, Boolean> eventHandlers)
+		Map<String, EventProperty> eventHandlers)
 	{
 		super();
 		this.readableFields = readableFields;
@@ -39,7 +39,7 @@ public class BeanPropertyInfo
 		return writableFields;
 	}
 
-	public Map<String, Boolean> getEventHandlers()
+	public Map<String, EventProperty> getEventHandlers()
 	{
 		return eventHandlers;
 	}

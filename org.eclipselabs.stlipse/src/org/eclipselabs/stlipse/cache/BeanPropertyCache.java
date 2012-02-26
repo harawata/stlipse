@@ -44,7 +44,7 @@ public class BeanPropertyCache
 		Map<String, BeanPropertyInfo> beans = projectCache.get(project);
 		if (beans != null)
 		{
-			beans.remove(qualifiedName);
+			beans.remove(removeExtension(qualifiedName));
 		}
 	}
 
@@ -53,9 +53,10 @@ public class BeanPropertyCache
 		return getBeanPropertyInfo(project, qualifiedName, null);
 	}
 
-	public static BeanPropertyInfo getBeanPropertyInfo(IJavaProject project,
-		String qualifiedName, ICompilationUnit compilationUnit)
+	public static BeanPropertyInfo getBeanPropertyInfo(IJavaProject project, String fqn,
+		ICompilationUnit compilationUnit)
 	{
+		String qualifiedName = removeExtension(fqn);
 		Map<String, BeanPropertyInfo> beans = projectCache.get(project.getProject());
 		BeanPropertyInfo beanProps = null;
 		if (beans == null)
@@ -92,7 +93,7 @@ public class BeanPropertyCache
 		{
 			Map<String, String> readableFields = new LinkedHashMap<String, String>();
 			Map<String, String> writableFields = new LinkedHashMap<String, String>();
-			Map<String, Boolean> eventHandlers = new LinkedHashMap<String, Boolean>();
+			Map<String, EventProperty> eventHandlers = new LinkedHashMap<String, EventProperty>();
 
 			ASTParser parser = ASTParser.newParser(AST.JLS4);
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -118,11 +119,12 @@ public class BeanPropertyCache
 		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, null);
 		if (beanProperty != null)
 		{
-			for (Entry<String, Boolean> eventHandler : beanProperty.getEventHandlers().entrySet())
+			for (Entry<String, EventProperty> eventHandler : beanProperty.getEventHandlers()
+				.entrySet())
 			{
 				String handlerName = eventHandler.getKey();
-				boolean isDefaultHandler = Boolean.TRUE.equals(eventHandler.getValue());
-				if ((alwaysIncludeDefault && isDefaultHandler)
+				EventProperty eventProperty = eventHandler.getValue();
+				if ((alwaysIncludeDefault && eventProperty.isDefaultHandler())
 					|| (isValidation && handlerName.equals(matchStr)) || handlerName.startsWith(matchStr))
 				{
 					results.add(handlerName);
@@ -132,10 +134,11 @@ public class BeanPropertyCache
 		return results;
 	}
 
-	public static Map<String, Boolean> getEventHandlers(IJavaProject project, String qualifiedName)
+	public static Map<String, EventProperty> getEventHandlers(IJavaProject project,
+		String qualifiedName)
 	{
 		final BeanPropertyInfo beanProperty = getBeanPropertyInfo(project, qualifiedName, null);
-		return beanProperty == null ? Collections.<String, Boolean> emptyMap()
+		return beanProperty == null ? Collections.<String, EventProperty> emptyMap()
 			: beanProperty.getEventHandlers();
 	}
 
@@ -206,6 +209,14 @@ public class BeanPropertyCache
 			proposalList.add(proposal);
 		}
 		return proposalList;
+	}
+
+	private static String removeExtension(String src)
+	{
+		if (src != null && src.endsWith(".java"))
+			return src.substring(0, src.length() - 5);
+		else
+			return src;
 	}
 
 	private static int getDotIndex(String str, int startIdx)

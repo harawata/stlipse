@@ -16,6 +16,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipselabs.stlipse.Activator;
 import org.eclipselabs.stlipse.cache.BeanPropertyCache;
 import org.eclipselabs.stlipse.cache.BeanPropertyVisitor;
+import org.eclipselabs.stlipse.cache.EventProperty;
 
 import com.sun.mirror.apt.Messager;
 import com.sun.mirror.declaration.AnnotationMirror;
@@ -40,7 +41,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 
 	private Messager messager;
 
-	private boolean hasOn;
+	private boolean hasEventOption;
 
 	public StlipseAnnotationVisitor(
 		String annotationType,
@@ -53,8 +54,9 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 		this.project = project;
 		this.qualifiedName = qualifiedName;
 		this.messager = messager;
-		this.hasOn = StlipseAnnotationProcessorFactory.AFTER.equals(annotationType)
+		this.hasEventOption = StlipseAnnotationProcessorFactory.AFTER.equals(annotationType)
 			|| StlipseAnnotationProcessorFactory.BEFORE.equals(annotationType)
+			|| StlipseAnnotationProcessorFactory.WIZARD.equals(annotationType)
 			|| StlipseAnnotationProcessorFactory.VALIDATE.equals(annotationType)
 			|| StlipseAnnotationProcessorFactory.VALIDATION_METHOD.equals(annotationType);
 	}
@@ -66,6 +68,10 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 		{
 			validateStrictBinding(d);
 		}
+		if (hasEventOption)
+		{
+			validateEventOption(d, eventOptionName(annotationType));
+		}
 	}
 
 	@Override
@@ -76,9 +82,9 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 			String propertyName = d.getSimpleName();
 			validateValidateOptions(d, propertyName);
 		}
-		if (hasOn)
+		if (hasEventOption)
 		{
-			validateOnAttribute(d);
+			validateEventOption(d, eventOptionName(annotationType));
 		}
 	}
 
@@ -90,13 +96,13 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 			String propertyName = BeanPropertyVisitor.getFieldNameFromAccessor(d.getSimpleName());
 			validateValidateOptions(d, propertyName);
 		}
-		if (hasOn)
+		if (hasEventOption)
 		{
-			validateOnAttribute(d);
+			validateEventOption(d, eventOptionName(annotationType));
 		}
 	}
 
-	private void validateOnAttribute(Declaration d)
+	private void validateEventOption(Declaration d, final String eventOptionName)
 	{
 		Collection<AnnotationMirror> mirrors = d.getAnnotationMirrors();
 		for (AnnotationMirror mirror : mirrors)
@@ -108,7 +114,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 				for (Entry<AnnotationTypeElementDeclaration, AnnotationValue> valueEntry : valueSet)
 				{
 					String optionName = valueEntry.getKey().getSimpleName();
-					if ("on".equals(optionName))
+					if (eventOptionName.equals(optionName))
 					{
 						@SuppressWarnings("unchecked")
 						List<AnnotationValue> properties = (List<AnnotationValue>)valueEntry.getValue()
@@ -128,7 +134,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 
 	private void validateEventName(List<AnnotationValue> properties)
 	{
-		Map<String, Boolean> eventHandlers = BeanPropertyCache.getEventHandlers(project,
+		Map<String, EventProperty> eventHandlers = BeanPropertyCache.getEventHandlers(project,
 			qualifiedName);
 		for (AnnotationValue property : properties)
 		{
@@ -232,4 +238,8 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 		}
 	}
 
+	private static String eventOptionName(String annotation)
+	{
+		return StlipseAnnotationProcessorFactory.WIZARD.equals(annotation) ? "startEvents" : "on";
+	}
 }

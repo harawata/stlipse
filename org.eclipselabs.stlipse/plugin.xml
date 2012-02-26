@@ -66,8 +66,8 @@
          point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
       <hyperlinkDetector
             activate="true"
-            class="org.eclipselabs.stlipse.hyperlink.BeanclassHyperlinkDetector"
-            id="org.eclipselabs.stlipse.BeanclassHyperlinkDetector"
+            class="org.eclipselabs.stlipse.hyperlink.JspHyperlinkDetector"
+            id="org.eclipselabs.stlipse.JspHyperlinkDetector"
             name="Stlipse Beanclass Hyperlink Detector"
             targetId="org.eclipse.jst.jsp.core.jspsource">
       </hyperlinkDetector>

@@ -42,13 +42,13 @@ public class BeanPropertyVisitor extends ASTVisitor
 
 	private final Map<String, String> writableFields;
 
-	private final Map<String, Boolean> eventHandlers;
+	private final Map<String, EventProperty> eventHandlers;
 
 	public BeanPropertyVisitor(
 		IJavaProject project,
 		Map<String, String> readableFields,
 		Map<String, String> writableFields,
-		Map<String, Boolean> eventHandlers)
+		Map<String, EventProperty> eventHandlers)
 	{
 		super();
 		this.project = project;
@@ -128,7 +128,7 @@ public class BeanPropertyVisitor extends ASTVisitor
 							if (TypeCache.isResolution(project, project.findType(qualifiedName)))
 							{
 								Object annotationValue = null;
-								Boolean isDefaultHandler = Boolean.FALSE;
+								boolean isDefaultHandler = false;
 								boolean isInterceptor = false;
 								for (IAnnotationBinding annotation : node.resolveBinding().getAnnotations())
 								{
@@ -152,8 +152,14 @@ public class BeanPropertyVisitor extends ASTVisitor
 									}
 								}
 								if (!isInterceptor)
-									eventHandlers.put((String)(annotationValue == null ? methodName
-										: annotationValue), isDefaultHandler);
+								{
+									EventProperty eventProperty = new EventProperty();
+									eventProperty.setDefaultHandler(isDefaultHandler);
+									eventProperty.setMethodName(methodName);
+									String eventName = (String)(annotationValue == null ? methodName
+										: annotationValue);
+									eventHandlers.put(eventName, eventProperty);
+								}
 							}
 						}
 						catch (JavaModelException e)
