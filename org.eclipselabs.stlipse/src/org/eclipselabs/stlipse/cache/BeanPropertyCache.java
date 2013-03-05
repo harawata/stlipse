@@ -34,6 +34,11 @@ public class BeanPropertyCache
 {
 	private static final Map<IProject, Map<String, BeanPropertyInfo>> projectCache = new ConcurrentHashMap<IProject, Map<String, BeanPropertyInfo>>();
 
+	public static void clearBeanPropertyCache()
+	{
+		projectCache.clear();
+	}
+
 	public static void clearBeanPropertyCache(IProject project)
 	{
 		projectCache.remove(project);

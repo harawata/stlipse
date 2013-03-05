@@ -7,6 +7,7 @@ package org.eclipselabs.stlipse;
 
 import java.net.URL;
 
+import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -59,7 +60,8 @@ public class Activator extends AbstractUIPlugin
 
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		resourceChangeListener = new ResourceChangeListener();
-		workspace.addResourceChangeListener(resourceChangeListener);
+		workspace.addResourceChangeListener(resourceChangeListener,
+			IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_BUILD);
 	}
 
 	/*

@@ -73,6 +73,11 @@ public class BeanClassCache
 		beanCache.remove(project);
 	}
 
+	public static void clear()
+	{
+		beanCache.clear();
+	}
+
 	private static synchronized List<BeanClassInfo> getBeanClassCache(IJavaProject javaProject)
 	{
 		final IProject project = javaProject.getProject();

@@ -12,6 +12,8 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
@@ -33,8 +35,26 @@ public class ResourceChangeListener implements IResourceChangeListener
 
 	public void resourceChanged(IResourceChangeEvent event)
 	{
-		if (event.getType() != IResourceChangeEvent.POST_CHANGE)
+		if (event.getType() == IResourceChangeEvent.PRE_BUILD
+			&& event.getBuildKind() == IncrementalProjectBuilder.CLEAN_BUILD)
+		{
+			Object source = event.getSource();
+			if (source instanceof IWorkspace)
+			{
+				BeanClassCache.clear();
+				BeanPropertyCache.clearBeanPropertyCache();
+			}
+			else if (source instanceof IProject)
+			{
+				IProject project = (IProject)source;
+				BeanClassCache.clear(project);
+				BeanPropertyCache.clearBeanPropertyCache(project);
+			}
+		}
+		else if (event.getType() != IResourceChangeEvent.POST_CHANGE)
+		{
 			return;
+		}
 
 		IResourceDelta delta = event.getDelta();
 
