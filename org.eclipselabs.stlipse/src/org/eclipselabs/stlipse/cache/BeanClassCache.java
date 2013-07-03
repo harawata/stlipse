@@ -87,19 +87,16 @@ public class BeanClassCache
 		final List<BeanClassInfo> beanClassList = new CopyOnWriteArrayList<BeanClassInfo>();
 		beanCache.put(project, beanClassList);
 
-		final List<String> packageList = getActionResolverPackages(project);
-		if (packageList.size() == 0)
-		{
-			// Returns an empty list if no package root for action beans is defined.
-			return beanClassList;
-		}
-
 		try
 		{
 			IType actionBeanInterface = TypeCache.getActionBean(javaProject);
 			if (actionBeanInterface == null)
+			{
+				// It wouldn't be a Stripes project.
 				return beanClassList;
+			}
 
+			final List<String> packageList = getActionResolverPackages(project);
 			IJavaSearchScope scope = SearchEngine.createHierarchyScope(actionBeanInterface);
 			TypeNameRequestor requestor = new TypeNameRequestor()
 			{
@@ -110,8 +107,9 @@ public class BeanClassCache
 					// Ignore abstract classes.
 					if (Flags.isAbstract(modifiers))
 						return;
-					// Should be in action resolver packages.
-					if (!isInTargetPackage(packageList, String.valueOf(packageName)))
+					// Should be in action resolver packages if specified.
+					if (!packageList.isEmpty()
+						&& !isInTargetPackage(packageList, String.valueOf(packageName)))
 						return;
 
 					BeanClassInfo beanClass = new BeanClassInfo(packageName, simpleTypeName);
@@ -146,6 +144,11 @@ public class BeanClassCache
 		return beanClassList;
 	}
 
+	/**
+	 * @param project
+	 * @return Packages listed in ActionResolver.Packages<br>
+	 *         Returns an empty list if ActionResolver.Packages is not set in web.xml.
+	 */
 	private static List<String> getActionResolverPackages(IProject project)
 	{
 		List<String> packageList = new ArrayList<String>();
