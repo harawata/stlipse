@@ -1,8 +1,8 @@
 Stlipse : Stripes plug-in for Eclipse
 =======
 
-[Stripes](http://www.stripesframework.org/) is a web application development framework.
-And Stlipse is a small Eclipse plug-in that helps developing Stripes web applications.
+[Stripes Framework](http://www.stripesframework.org/) is a web application development framework.  
+And __Stlipse__ is a small Eclipse plug-in that helps developing Stripes based web applications.
 
 ## Features
 
