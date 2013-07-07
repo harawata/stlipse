@@ -13,7 +13,7 @@ And Stlipse is a small Eclipse plug-in that helps developing Stripes web applica
 * __beanclass__ validation and Quick Fix to create the missing ActionBean directly from JSP
 * Content Assist and Validation for various Stripes form tags
 
-Please see [[JSP editor enhancement|JSP-Editor-Enhancements]] for the details.
+Please see [JSP editor enhancements](https://github.com/harawata/stlipse/wiki/JSP-Editor-Enhancements) for the details.
 
 ### Java Editor Enhancements
 
@@ -21,8 +21,8 @@ Please see [[JSP editor enhancement|JSP-Editor-Enhancements]] for the details.
 * Content Assist and Validation for __allow__ and __deny__ attributes of __@StrictBinding__ annotation
 * A set of templates
 
-Please see [[Java editor enhancement|Java-Editor-Enhancements]] and [[Templates]] for the details.
+Please see [Java editor enhancement](https://github.com/harawata/stlipse/wiki/Java-Editor-Enhancements) and [Templates](https://github.com/harawata/stlipse/wiki/Templates) for the details.
 
 ## Installation
 
-Please see the [[Installation Guide|Installation-Guide]].
+Please see the [Installation Guide](https://github.com/harawata/stlipse/wiki/Installation-Guide).
