@@ -7,6 +7,7 @@ package org.eclipselabs.stlipse.javaeditor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -318,7 +319,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 	public List<IContextInformation> computeContextInformation(
 		ContentAssistInvocationContext context, IProgressMonitor monitor)
 	{
-		return null;
+		return Collections.emptyList();
 	}
 
 	public String getErrorMessage()
