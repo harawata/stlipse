@@ -30,5 +30,11 @@
    <feature url="features/org.eclipselabs.stlipse.templates.feature_1.0.9.201307051256.jar" id="org.eclipselabs.stlipse.templates.feature" version="1.0.9.201307051256">
       <category name="org.eclipselabs.stlipse"/>
    </feature>
+   <feature url="features/org.eclipselabs.stlipse.feature_1.0.10.qualifier.jar" id="org.eclipselabs.stlipse.feature" version="1.0.10.qualifier">
+      <category name="org.eclipselabs.stlipse"/>
+   </feature>
+   <feature url="features/org.eclipselabs.stlipse.templates.feature_1.0.10.qualifier.jar" id="org.eclipselabs.stlipse.templates.feature" version="1.0.10.qualifier">
+      <category name="org.eclipselabs.stlipse"/>
+   </feature>
    <category-def name="org.eclipselabs.stlipse" label="Stlipse"/>
 </site>
