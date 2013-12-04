@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -83,8 +84,11 @@ public class BeanPropertyVisitor extends ASTVisitor
 	@Override
 	public boolean visit(MethodDeclaration node)
 	{
-		// Perform some quick check before binding resolution.
-		if (Modifier.isPublic(node.getModifiers()))
+		// Resolve binding first to support Lombok generated methods.
+		// node.getModifiers() returns incorrect access modifiers for them.
+		// https://github.com/harawata/stlipse/issues/2
+		IMethodBinding method = node.resolveBinding();
+		if (Modifier.isPublic(method.getModifiers()))
 		{
 			final String methodName = node.getName().toString();
 			final int parameterCount = node.parameters().size();
@@ -130,7 +134,7 @@ public class BeanPropertyVisitor extends ASTVisitor
 								Object annotationValue = null;
 								boolean isDefaultHandler = false;
 								boolean isInterceptor = false;
-								for (IAnnotationBinding annotation : node.resolveBinding().getAnnotations())
+								for (IAnnotationBinding annotation : method.getAnnotations())
 								{
 									String name = annotation.getName();
 
