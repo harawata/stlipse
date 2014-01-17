@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
@@ -92,7 +92,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 										char[] token = coreContext.getToken();
 										matchStr.append('.').append(token);
 										Map<String, String> fields = BeanPropertyCache.searchFields(project,
-											beanFqn, matchStr.toString(), false, -1, false, unit);
+											beanFqn, matchStr.toString(), false, -1, false);
 										proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields,
 											String.valueOf(token), coreContext.getTokenStart() + 1, replacementLength));
 									}
@@ -101,7 +101,7 @@ public class JavaCompletionProposalComputer implements IJavaCompletionProposalCo
 								{
 									String input = String.valueOf(coreContext.getToken());
 									Map<String, String> fields = BeanPropertyCache.searchFields(project, beanFqn,
-										input, false, -1, false, unit);
+										input, false, -1, false);
 									proposals.addAll(BeanPropertyCache.buildFieldNameProposal(fields, input,
 										coreContext.getTokenStart() + 1, replacementLength));
 								}

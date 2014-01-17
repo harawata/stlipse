@@ -1,9 +1,11 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
 package org.eclipselabs.stlipse.apt;
+
+import static org.eclipselabs.stlipse.util.StripesClasses.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,17 +56,15 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 		this.project = project;
 		this.qualifiedName = qualifiedName;
 		this.messager = messager;
-		this.hasEventOption = StlipseAnnotationProcessorFactory.AFTER.equals(annotationType)
-			|| StlipseAnnotationProcessorFactory.BEFORE.equals(annotationType)
-			|| StlipseAnnotationProcessorFactory.WIZARD.equals(annotationType)
-			|| StlipseAnnotationProcessorFactory.VALIDATE.equals(annotationType)
-			|| StlipseAnnotationProcessorFactory.VALIDATION_METHOD.equals(annotationType);
+		this.hasEventOption = AFTER.equals(annotationType) || BEFORE.equals(annotationType)
+			|| WIZARD.equals(annotationType) || VALIDATE.equals(annotationType)
+			|| VALIDATION_METHOD.equals(annotationType);
 	}
 
 	@Override
 	public void visitClassDeclaration(ClassDeclaration d)
 	{
-		if (StlipseAnnotationProcessorFactory.STRICT_BINDING.equals(annotationType))
+		if (STRICT_BINDING.equals(annotationType))
 		{
 			validateStrictBinding(d);
 		}
@@ -77,7 +77,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 	@Override
 	public void visitFieldDeclaration(FieldDeclaration d)
 	{
-		if (StlipseAnnotationProcessorFactory.VALIDATE_NESTED_PROPERTIES.equals(annotationType))
+		if (VALIDATE_NESTED_PROPERTIES.equals(annotationType))
 		{
 			String propertyName = d.getSimpleName();
 			validateValidateOptions(d, propertyName);
@@ -91,7 +91,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 	@Override
 	public void visitMethodDeclaration(MethodDeclaration d)
 	{
-		if (StlipseAnnotationProcessorFactory.VALIDATE_NESTED_PROPERTIES.equals(annotationType))
+		if (VALIDATE_NESTED_PROPERTIES.equals(annotationType))
 		{
 			String propertyName = BeanPropertyVisitor.getFieldNameFromAccessor(d.getSimpleName());
 			validateValidateOptions(d, propertyName);
@@ -168,7 +168,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 						for (AnnotationValue property : properties)
 						{
 							Map<String, String> matched = BeanPropertyCache.searchFields(project,
-								qualifiedName, property.getValue().toString(), false, -1, true, null);
+								qualifiedName, property.getValue().toString(), false, -1, true);
 							if (matched.size() == 0)
 							{
 								messager.printError(property.getPosition(), "No writable property found: "
@@ -217,7 +217,7 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 								AnnotationValue annotationValue = validateOpt.getValue();
 								searchStr.append('.').append(annotationValue);
 								Map<String, String> matched = BeanPropertyCache.searchFields(project,
-									qualifiedName, searchStr.toString(), false, -1, true, null);
+									qualifiedName, searchStr.toString(), false, -1, true);
 								if (matched.size() == 0)
 								{
 									messager.printError(annotationValue.getPosition(),
@@ -240,6 +240,6 @@ public class StlipseAnnotationVisitor extends SimpleDeclarationVisitor
 
 	private static String eventOptionName(String annotation)
 	{
-		return StlipseAnnotationProcessorFactory.WIZARD.equals(annotation) ? "startEvents" : "on";
+		return WIZARD.equals(annotation) ? "startEvents" : "on";
 	}
 }

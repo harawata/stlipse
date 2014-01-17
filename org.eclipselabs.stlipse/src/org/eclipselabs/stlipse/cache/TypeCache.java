@@ -1,9 +1,11 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
 package org.eclipselabs.stlipse.cache;
+
+import static org.eclipselabs.stlipse.util.StripesClasses.*;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,10 +21,6 @@ import org.eclipse.jdt.core.JavaModelException;
  */
 public class TypeCache
 {
-	private static final String ACTION_BEAN = "net.sourceforge.stripes.action.ActionBean";
-
-	private static final String RESOLUTION = "net.sourceforge.stripes.action.Resolution";
-
 	private static final Map<IJavaProject, Map<String, IType>> typeCache = new ConcurrentHashMap<IJavaProject, Map<String, IType>>();
 
 	public static IType getActionBean(IJavaProject project) throws JavaModelException

@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
@@ -9,15 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
@@ -72,10 +66,12 @@ public class BeanPropertyVisitor extends ASTVisitor
 				String qualifiedName = getQualifiedNameFromType(node.getType());
 				if (qualifiedName == null)
 					; // ignore
-				else if (Modifier.isFinal(modifiers))
-					readableFields.put(fieldName, qualifiedName);
 				else
-					writableFields.put(fieldName, qualifiedName);
+				{
+					readableFields.put(fieldName, qualifiedName);
+					if (!Modifier.isFinal(modifiers))
+						writableFields.put(fieldName, qualifiedName);
+				}
 			}
 		}
 		return false;
@@ -203,13 +199,13 @@ public class BeanPropertyVisitor extends ASTVisitor
 		return returnType.endsWith("Resolution") && parameterCount == 0;
 	}
 
-	private boolean isGetter(String methodName, int parameterCount)
+	public static boolean isGetter(String methodName, int parameterCount)
 	{
 		return (methodName.startsWith("get") && methodName.length() > 3)
 			|| (methodName.startsWith("is") && methodName.length() > 2) && parameterCount == 0;
 	}
 
-	private boolean isSetter(String methodName, int parameterCount)
+	public static boolean isSetter(String methodName, int parameterCount)
 	{
 		return methodName.startsWith("set") && methodName.length() > 3 && parameterCount == 1;
 	}
@@ -223,29 +219,12 @@ public class BeanPropertyVisitor extends ASTVisitor
 	@Override
 	public void endVisit(TypeDeclaration node)
 	{
-		try
+		Type superclassType = node.getSuperclassType();
+		if (superclassType != null)
 		{
-			Type superclassType = node.getSuperclassType();
-			if (superclassType != null)
-			{
-				ITypeBinding binding = superclassType.resolveBinding();
-				IType type = project.findType(binding.getQualifiedName());
-				ICompilationUnit unit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
-				if (unit != null && unit.isStructureKnown())
-				{
-					ASTParser parser = ASTParser.newParser(AST.JLS4);
-					parser.setKind(ASTParser.K_COMPILATION_UNIT);
-					parser.setSource(unit);
-					parser.setResolveBindings(true);
-					CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-					astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields,
-						eventHandlers));
-				}
-			}
-		}
-		catch (JavaModelException e)
-		{
-			e.printStackTrace();
+			ITypeBinding binding = superclassType.resolveBinding();
+			BeanPropertyCache.parseBean(project, binding.getQualifiedName(), readableFields,
+				writableFields, eventHandlers);
 		}
 	}
 

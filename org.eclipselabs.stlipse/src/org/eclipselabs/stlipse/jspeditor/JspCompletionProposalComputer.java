@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
@@ -159,7 +159,7 @@ public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalC
 			IResource resource = getResource(contentAssistRequest);
 			IJavaProject project = getJavaProject(resource);
 			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass,
-				matchString, includeReadOnly, -1, false, null);
+				matchString, includeReadOnly, -1, false);
 			List<ICompletionProposal> proposals = BeanPropertyCache.buildFieldNameProposal(fields,
 				matchString, start, length);
 			for (ICompletionProposal proposal : proposals)

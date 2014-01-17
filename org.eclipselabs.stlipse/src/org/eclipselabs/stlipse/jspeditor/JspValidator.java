@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2011-2012 by Iwao AVE!
+ * Copyright (C) 2011-2014 by Iwao AVE!
  * This program is made available under the terms of the MIT License.
  */
 
@@ -183,7 +183,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		if (beanclass != null)
 		{
 			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass, property,
-				false, -1, true, null);
+				false, -1, true);
 			if (fields.size() == 0)
 			{
 				addMarker(file, doc, attr, NO_WRITABLE_PROPERTY, IMarker.SEVERITY_WARNING,
