@@ -43,6 +43,7 @@ import org.w3c.dom.NodeList;
 /**
  * @author Iwao AVE!
  */
+@SuppressWarnings("restriction")
 public class JspValidator extends AbstractValidator implements IValidator
 {
 

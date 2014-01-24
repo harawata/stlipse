@@ -27,6 +27,7 @@ import org.eclipselabs.stlipse.util.ProjectUtil;
 /**
  * @author Iwao AVE!
  */
+@SuppressWarnings("restriction")
 public class NewBeanclassWizard
 {
 	private IJavaProject project;

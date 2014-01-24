@@ -22,6 +22,7 @@ import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 /**
  * @author Iwao AVE!
  */
+@SuppressWarnings("restriction")
 public class ProjectUtil
 {
 	public static IJavaProject getProjectFromDocument(IDocument document)

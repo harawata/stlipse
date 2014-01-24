@@ -79,6 +79,7 @@ public class JspQuickAssistProcessor implements IQuickAssistProcessor
 		if (annotationModel == null)
 			return null;
 
+		@SuppressWarnings("rawtypes")
 		Iterator iterator;
 		if (annotationModel instanceof IAnnotationAccessExtension2)
 		{

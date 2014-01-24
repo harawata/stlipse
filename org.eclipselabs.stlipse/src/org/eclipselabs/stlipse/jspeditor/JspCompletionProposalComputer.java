@@ -46,6 +46,7 @@ import org.eclipselabs.stlipse.util.ClassNameUtil;
  * 
  * @author ave
  */
+@SuppressWarnings("restriction")
 public class JspCompletionProposalComputer extends DefaultXMLCompletionProposalComputer
 {
 	protected void addAttributeValueProposals(ContentAssistRequest contentAssistRequest,

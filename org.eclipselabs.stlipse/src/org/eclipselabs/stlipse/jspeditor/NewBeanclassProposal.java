@@ -6,7 +6,6 @@
 package org.eclipselabs.stlipse.jspeditor;
 
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IType;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
@@ -33,7 +32,7 @@ public class NewBeanclassProposal implements ICompletionProposal
 	{
 		IJavaProject project = ProjectUtil.getProjectFromDocument(document);
 		NewBeanclassWizard wizard = new NewBeanclassWizard(project, fqn);
-		IType createdType = wizard.create();
+		wizard.create();
 	}
 
 	public Point getSelection(IDocument document)

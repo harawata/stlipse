@@ -38,6 +38,7 @@ import org.w3c.dom.Node;
 /**
  * @author Iwao AVE!
  */
+@SuppressWarnings("restriction")
 public class JspHyperlinkDetector extends AbstractHyperlinkDetector
 {
 
