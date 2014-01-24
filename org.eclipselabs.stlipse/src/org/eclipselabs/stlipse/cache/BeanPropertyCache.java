@@ -70,21 +70,19 @@ public class BeanPropertyCache
 			beans = new ConcurrentHashMap<String, BeanPropertyInfo>();
 			projectCache.put(project.getProject(), beans);
 		}
-		else
+
+		beanProps = beans.get(qualifiedName);
+		if (beanProps == null)
 		{
-			beanProps = beans.get(qualifiedName);
-			if (beanProps == null)
-			{
-				final Map<String, String> readableFields = new LinkedHashMap<String, String>();
-				final Map<String, String> writableFields = new LinkedHashMap<String, String>();
-				final Map<String, EventProperty> eventHandlers = new LinkedHashMap<String, EventProperty>();
-				parseBean(project, qualifiedName, readableFields, writableFields, eventHandlers);
-				beanProps = new BeanPropertyInfo(readableFields, writableFields, eventHandlers);
-			}
-			beans.put(qualifiedName, beanProps);
-			return beanProps;
+			final Map<String, String> readableFields = new LinkedHashMap<String, String>();
+			final Map<String, String> writableFields = new LinkedHashMap<String, String>();
+			final Map<String, EventProperty> eventHandlers = new LinkedHashMap<String, EventProperty>();
+			parseBean(project, qualifiedName, readableFields, writableFields, eventHandlers);
+			beanProps = new BeanPropertyInfo(readableFields, writableFields, eventHandlers);
 		}
-		return null;
+		beans.put(qualifiedName, beanProps);
+
+		return beanProps;
 	}
 
 	protected static void parseBean(IJavaProject project, String qualifiedName,
@@ -155,8 +153,7 @@ public class BeanPropertyCache
 						String fieldName = BeanPropertyVisitor.getFieldNameFromAccessor(methodName);
 						readableFields.put(fieldName, Signature.toString(returnType));
 					}
-					else if (RESOLUTION.equals(Signature.toString(returnType))
-						&& parameterCount == 0)
+					else if (RESOLUTION.equals(Signature.toString(returnType)) && parameterCount == 0)
 					{
 						parseBinaryEventHandler(method, eventHandlers);
 					}
