@@ -181,7 +181,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 	private void validateField(IJavaProject project, IFile file, IStructuredDocument doc,
 		IDOMElement element, IDOMAttr attr, String beanclass, String property)
 	{
-		if (beanclass != null)
+		if (isBeanclassValidatable(beanclass))
 		{
 			Map<String, String> fields = BeanPropertyCache.searchFields(project, beanclass, property,
 				false, -1, true);
@@ -198,7 +198,7 @@ public class JspValidator extends AbstractValidator implements IValidator
 		IDOMElement element, IDOMAttr attr, String beanclass, String event,
 		boolean validIfDefaultHandlerExists)
 	{
-		if (beanclass != null)
+		if (isBeanclassValidatable(beanclass))
 		{
 			List<String> events = BeanPropertyCache.searchEventHandler(project, beanclass, event,
 				true, validIfDefaultHandlerExists);
@@ -213,11 +213,17 @@ public class JspValidator extends AbstractValidator implements IValidator
 	private void validateBeanclass(IJavaProject project, IFile file, IStructuredDocument doc,
 		IDOMAttr attr, String beanclass) throws JavaModelException
 	{
-		if (!BeanClassCache.actionBeanExists(project, beanclass))
+		if (isBeanclassValidatable(beanclass)
+			&& !BeanClassCache.actionBeanExists(project, beanclass))
 		{
 			addMarker(file, doc, attr, MISSING_ACTION_BEAN, IMarker.SEVERITY_ERROR,
 				IMarker.PRIORITY_HIGH, "ActionBean '" + beanclass + "' not found.");
 		}
+	}
+
+	private boolean isBeanclassValidatable(String beanclass)
+	{
+		return beanclass != null && beanclass.indexOf('$') == -1;
 	}
 
 	private boolean containsElExpression(String str)
