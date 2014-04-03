@@ -9,6 +9,7 @@ import static org.eclipselabs.stlipse.util.StripesClasses.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,18 @@ public class BeanPropertyCache
 		Map<String, BeanPropertyInfo> beans = projectCache.get(project);
 		if (beans != null)
 		{
-			beans.remove(removeExtension(qualifiedName));
+			String topLevelClass = removeExtension(qualifiedName);
+			beans.remove(topLevelClass);
+			// Clear cache for inner classes.
+			String innerClassPrefix = topLevelClass + ".";
+			for (Iterator<Entry<String, BeanPropertyInfo>> it = beans.entrySet().iterator(); it.hasNext();)
+			{
+				Entry<String, BeanPropertyInfo> entry = it.next();
+				if (entry.getKey().startsWith(innerClassPrefix))
+				{
+					it.remove();
+				}
+			}
 		}
 	}
 
@@ -100,7 +112,8 @@ public class BeanPropertyCache
 				}
 				else
 				{
-					parseSource(project, type, readableFields, writableFields, eventHandlers);
+					parseSource(project, type, qualifiedName, readableFields, writableFields,
+						eventHandlers);
 				}
 			}
 		}
@@ -213,8 +226,9 @@ public class BeanPropertyCache
 	}
 
 	protected static void parseSource(IJavaProject project, final IType type,
-		final Map<String, String> readableFields, final Map<String, String> writableFields,
-		final Map<String, EventProperty> eventHandlers) throws JavaModelException
+		final String qualifiedName, final Map<String, String> readableFields,
+		final Map<String, String> writableFields, final Map<String, EventProperty> eventHandlers)
+		throws JavaModelException
 	{
 		ICompilationUnit compilationUnit = (ICompilationUnit)type.getAncestor(IJavaElement.COMPILATION_UNIT);
 		ASTParser parser = ASTParser.newParser(AST.JLS4);
@@ -223,8 +237,8 @@ public class BeanPropertyCache
 		parser.setResolveBindings(true);
 		// parser.setIgnoreMethodBodies(true);
 		CompilationUnit astUnit = (CompilationUnit)parser.createAST(null);
-		astUnit.accept(new BeanPropertyVisitor(project, readableFields, writableFields,
-			eventHandlers));
+		astUnit.accept(new BeanPropertyVisitor(project, qualifiedName, readableFields,
+			writableFields, eventHandlers));
 	}
 
 	public static List<String> searchEventHandler(IJavaProject project, String qualifiedName,
